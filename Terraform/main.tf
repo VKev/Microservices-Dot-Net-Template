@@ -702,7 +702,8 @@ module "cloudfront" {
 
   # HTTP methods for API support
   allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"]
-  cached_methods   = var.cloudfront_enable_caching ? ["GET", "HEAD", "OPTIONS"] : []
+  # CloudFront requires cached_methods to be non-empty even when caching is effectively disabled via policies/TTLs
+  cached_methods   = ["GET", "HEAD", "OPTIONS"]
   compress         = true
 
   # CloudFront access logging (for debugging)
