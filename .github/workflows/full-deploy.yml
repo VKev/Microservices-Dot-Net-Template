@@ -17,7 +17,7 @@ on:
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-  PROJECT_NAME: ${{ vars.PROJECT_NAME || 'vkev-infrastructure-khanghv2406' }}
+  PROJECT_NAME: ${{ vars.PROJECT_NAME || 'vkev2406-infrastructure-khanghv2406' }}
 
 permissions:
   contents: read
@@ -31,7 +31,7 @@ jobs:
       name: ${{ inputs.environment }}
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-      PROJECT_NAME: ${{ vars.PROJECT_NAME || 'vkev-infrastructure-khanghv2406' }}
+      PROJECT_NAME: ${{ vars.PROJECT_NAME || 'vkev2406-infrastructure-khanghv2406' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -109,8 +109,8 @@ jobs:
       fail-fast: false
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-      PROJECT_NAME: ${{ vars.PROJECT_NAME || 'vkev-infrastructure-khanghv2406' }}
-      ECR_REPO_NAME: ${{ vars.ECR_REPO_NAME || format('{0}-{1}-ecr', vars.PROJECT_NAME || 'vkev-infrastructure-khanghv2406', inputs.environment) }}
+      PROJECT_NAME: ${{ vars.PROJECT_NAME || 'vkev2406-infrastructure-khanghv2406' }}
+      ECR_REPO_NAME: ${{ vars.ECR_REPO_NAME || format('{0}-{1}-ecr', vars.PROJECT_NAME || 'vkev2406-infrastructure-khanghv2406', inputs.environment) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -184,7 +184,7 @@ jobs:
       name: ${{ inputs.environment }}
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-      PROJECT_NAME: ${{ vars.PROJECT_NAME || 'vkev-infrastructure-khanghv2406' }}
+      PROJECT_NAME: ${{ vars.PROJECT_NAME || 'vkev2406-infrastructure-khanghv2406' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
