@@ -19,15 +19,8 @@ using System.Linq;
 using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
-const string AutoApplyMigrationsEnvVar = "AUTO_APPLY_MIGRATIONS";
-var autoApplySetting = builder.Configuration[AutoApplyMigrationsEnvVar];
-var shouldAutoApplyMigrations =
-    bool.TryParse(autoApplySetting, out var parsedAutoApply) && parsedAutoApply;
-
-if (!shouldAutoApplyMigrations)
-{
-    builder.Services.Replace(ServiceDescriptor.Scoped<IMigrator, NoOpMigrator>());
-}
+// Disable automatic EF Core migrations; migrations should be applied manually
+builder.Services.Replace(ServiceDescriptor.Scoped<IMigrator, NoOpMigrator>());
 
 var environment = builder.Environment;
 const string CorsPolicyName = "AllowFrontend";
@@ -136,58 +129,6 @@ builder.Services
     .AddInfrastructure();
 
 var app = builder.Build();
-
-if (shouldAutoApplyMigrations)
-{
-    using var scope = app.Services.CreateScope();
-    try
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
-        dbContext.Database.Migrate();
-        app.Logger.LogInformation("EF Core migrations applied successfully at startup.");
-        // Ensure password_reset_requests table exists in case it was removed while migration is recorded
-        try
-        {
-            var ensureSql = @"DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.tables
-        WHERE table_schema = 'public' AND table_name = 'password_reset_requests'
-    ) THEN
-        CREATE TABLE IF NOT EXISTS public.password_reset_requests (
-            password_reset_request_id uuid NOT NULL DEFAULT gen_random_uuid(),
-            user_id uuid NOT NULL,
-            token character varying(200) NOT NULL,
-            otp_hash character varying(255) NOT NULL,
-            expires_at timestamp with time zone NOT NULL,
-            created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            used boolean NOT NULL,
-            CONSTRAINT password_reset_requests_pkey PRIMARY KEY (password_reset_request_id),
-            CONSTRAINT password_reset_requests_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users (user_id) ON DELETE CASCADE
-        );
-        CREATE UNIQUE INDEX IF NOT EXISTS password_reset_requests_token_key ON public.password_reset_requests (token);
-        CREATE INDEX IF NOT EXISTS IX_password_reset_requests_user_id ON public.password_reset_requests (user_id);
-    END IF;
-END $$;";
-
-            dbContext.Database.ExecuteSqlRaw(ensureSql);
-            app.Logger.LogInformation("Ensured password_reset_requests table exists.");
-        }
-        catch (Exception innerEx)
-        {
-            app.Logger.LogWarning(innerEx, "Failed to ensure password_reset_requests table exists.");
-        }
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogError(ex, "Failed to apply EF Core migrations at startup.");
-        throw;
-    }
-}
-else
-{
-    app.Logger.LogInformation("Automatic EF Core migrations are disabled. Set {EnvVar}=true to enable.", AutoApplyMigrationsEnvVar);
-}
 // Health check endpoints
 app.MapGet("/health", () => new { status = "ok" });
 app.MapGet("/api/health", () => new { status = "ok" });

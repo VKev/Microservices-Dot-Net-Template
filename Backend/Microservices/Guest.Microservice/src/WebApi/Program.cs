@@ -19,14 +19,8 @@ if (!string.IsNullOrWhiteSpace(solutionDirectory))
 }
 
 var builder = WebApplication.CreateBuilder(args);
-const string AutoApplyMigrationsEnvVar = "AUTO_APPLY_MIGRATIONS";
-var autoApplySetting = builder.Configuration[AutoApplyMigrationsEnvVar];
-var shouldAutoApplyMigrations = bool.TryParse(autoApplySetting, out var parsedAutoApply) && parsedAutoApply;
-
-if (!shouldAutoApplyMigrations)
-{
-    builder.Services.Replace(ServiceDescriptor.Scoped<IMigrator, NoOpMigrator>());
-}
+// Disable automatic EF Core migrations; migrations should be applied manually
+builder.Services.Replace(ServiceDescriptor.Scoped<IMigrator, NoOpMigrator>());
 
 var environment = builder.Environment;
 
@@ -96,10 +90,6 @@ builder.Services
 
 var app = builder.Build();
 
-if (!shouldAutoApplyMigrations)
-{
-    app.Logger.LogInformation("Automatic EF Core migrations are disabled. Set {EnvVar}=true to enable.", AutoApplyMigrationsEnvVar);
-}
 app.MapGet("/health", () => new { status = "ok" });
 app.MapGet("/api/health", () => new { status = "ok" });
 
