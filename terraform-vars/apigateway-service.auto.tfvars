@@ -21,7 +21,7 @@ services = {
     ecs_service_connect_discovery_name = "api-gateway"
     ecs_service_connect_port_name      = "apigateway"
     ecs_container_name_suffix          = "apigateway"
-    ecs_container_image_repository_url = "936910352865.dkr.ecr.us-east-1.amazonaws.com/vkev2406-infrastructure-khanghv2406-ecr"
+    ecs_container_image_repository_url = "936910352865.dkr.ecr.us-east-1.amazonaws.com/vkev2406-infrastructure-khanghv2406-infrastructure-khanghv2406-ecr"
     ecs_container_image_tag            = "ApiGateway-latest"
     ecs_container_cpu                  = 120
     ecs_container_memory               = 120
@@ -39,9 +39,9 @@ services = {
       { name = "ENABLE_SWAGGER_UI", value = "true" },
       { name = "ASPNETCORE_ENVIRONMENT", value = "Production" },
       { name = "ASPNETCORE_URLS", value = "http://+:8080" },
-      { name = "Services__User__Host", value = "user-microservice" },
+      { name = "Services__User__Host", value = "user-service" },   # ECS Service Connect DNS
       { name = "Services__User__Port", value = "5002" },
-      { name = "Services__Guest__Host", value = "guest-microservice" },
+      { name = "Services__Guest__Host", value = "guest-service" }, # ECS Service Connect DNS
       { name = "Services__Guest__Port", value = "5001" },
       { name = "Jwt__SecretKey", value = "YourSuperSecretKeyThatIsAtLeast32CharactersLong!@#$%^&*()" },
       { name = "Jwt__Issuer", value = "UserMicroservice" },

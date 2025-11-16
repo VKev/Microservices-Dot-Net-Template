@@ -21,7 +21,7 @@ services = {
     ecs_service_connect_discovery_name = "guest-service"
     ecs_service_connect_port_name      = "guest"
     ecs_container_name_suffix          = "microservice"
-    ecs_container_image_repository_url = "936910352865.dkr.ecr.us-east-1.amazonaws.com/vkev2406-infrastructure-khanghv2406-ecr"
+    ecs_container_image_repository_url = "936910352865.dkr.ecr.us-east-1.amazonaws.com/vkev2406-infrastructure-khanghv2406-infrastructure-khanghv2406-ecr"
     ecs_container_image_tag            = "Guest.Microservice-latest"
     ecs_container_cpu                  = 120
     ecs_container_memory               = 120
@@ -44,7 +44,7 @@ services = {
       { name = "Database__Username", value = "avnadmin" },
       { name = "Database__Password", value = "AVNS_iGi4kJJObNRnGdM6BTb" },
       { name = "Database__Provider", value = "postgres" },
-      { name = "RabbitMq__Host", value = "rabbit-mq" },
+      { name = "RabbitMq__Host", value = "rabbitmq" }, # ECS Service Connect DNS
       { name = "RabbitMq__Port", value = "5672" },
       { name = "RabbitMq__Username", value = "rabbitmq" },
       { name = "RabbitMq__Password", value = "0Kg04Rq08!" },
