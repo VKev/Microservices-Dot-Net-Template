@@ -36,6 +36,12 @@ jobs:
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
 
     steps:
+      - name: Load project/region from Terraform vars
+        run: python Terraform/scripts/export_tf_env.py >> "$GITHUB_ENV"
+        env:
+          TF_ENV_FALLBACK_PROJECT: ""
+          TF_ENV_FALLBACK_REGION: ${{ env.AWS_REGION }}
+
       - name: Safety check
         run: |
           echo "WARNING: This workflow can DELETE ALL ECR repositories in region ${{ env.AWS_REGION }}."

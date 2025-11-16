@@ -36,6 +36,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Load project/region from Terraform vars
+        run: python Terraform/scripts/export_tf_env.py >> "$GITHUB_ENV"
+        env:
+          TF_ENV_FALLBACK_PROJECT: ${{ env.PROJECT_NAME }}
+          TF_ENV_FALLBACK_REGION: ${{ env.AWS_REGION }}
+
+      - name: Derive ECR repo name from project/env
+        run: |
+          REPO="${{ env.ECR_REPO_NAME }}"
+          if [ -z "$REPO" ]; then
+            REPO="${PROJECT_NAME:-default}-${{ inputs.environment }}-ecr"
+          fi
+          echo "ECR_REPO_NAME=$REPO" >> "$GITHUB_ENV"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -115,6 +129,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Load project/region from Terraform vars
+        run: python Terraform/scripts/export_tf_env.py >> "$GITHUB_ENV"
+        env:
+          TF_ENV_FALLBACK_PROJECT: ${{ env.PROJECT_NAME }}
+          TF_ENV_FALLBACK_REGION: ${{ env.AWS_REGION }}
+
+      - name: Derive ECR repo name from project/env
+        run: |
+          REPO="${{ env.ECR_REPO_NAME }}"
+          if [ -z "$REPO" ]; then
+            REPO="${PROJECT_NAME:-default}-${{ inputs.environment }}-ecr"
+          fi
+          echo "ECR_REPO_NAME=$REPO" >> "$GITHUB_ENV"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -188,6 +216,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Load project/region from Terraform vars
+        run: python Terraform/scripts/export_tf_env.py >> "$GITHUB_ENV"
+        env:
+          TF_ENV_FALLBACK_PROJECT: ${{ env.PROJECT_NAME }}
+          TF_ENV_FALLBACK_REGION: ${{ env.AWS_REGION }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -308,6 +342,13 @@ jobs:
             echo "Services keys:"
             jq -r '.services | keys' 00-all.auto.tfvars.json || echo "(no services key)"
           fi
+
+      - name: Refresh project/region from merged tfvars
+        working-directory: Terraform
+        run: python scripts/export_tf_env.py >> "$GITHUB_ENV"
+        env:
+          TF_ENV_FALLBACK_PROJECT: ${{ env.PROJECT_NAME }}
+          TF_ENV_FALLBACK_REGION: ${{ env.AWS_REGION }}
 
       - name: Terraform Init
         working-directory: Terraform
