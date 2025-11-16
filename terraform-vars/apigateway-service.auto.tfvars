@@ -21,7 +21,7 @@ services = {
     ecs_service_connect_discovery_name = "api-gateway"
     ecs_service_connect_port_name      = "apigateway"
     ecs_container_name_suffix          = "apigateway"
-    ecs_container_image_repository_url = "936910352865.dkr.ecr.us-east-1.amazonaws.com/vkev-infrastructure-khanghv2406-ecr"
+    ecs_container_image_repository_url = "784180969479.dkr.ecr.us-east-1.amazonaws.com/vkev-infrastructure-khanghv2406-ecr"
     ecs_container_image_tag            = "ApiGateway-latest"
     ecs_container_cpu                  = 120
     ecs_container_memory               = 120
@@ -46,7 +46,9 @@ services = {
       { name = "Jwt__SecretKey", value = "YourSuperSecretKeyThatIsAtLeast32CharactersLong!@#$%^&*()" },
       { name = "Jwt__Issuer", value = "UserMicroservice" },
       { name = "Jwt__Audience", value = "MicroservicesApp" },
-      { name = "Jwt__ExpirationMinutes", value = "60" }
+      { name = "Jwt__ExpirationMinutes", value = "60" },
+      { name = "Cors__AllowedOrigins__0", value = "http://localhost:5173" },
+      { name = "Cors__AllowedOrigins__1", value = "https://your-frontend.example.com" }
     ]
 
     ecs_container_health_check = {

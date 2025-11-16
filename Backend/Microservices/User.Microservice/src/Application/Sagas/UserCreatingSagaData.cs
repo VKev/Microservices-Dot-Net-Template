@@ -10,7 +10,7 @@ namespace Application.Sagas
     {
         public Guid CorrelationId { get; set; }
 
-        public string CurrentState { get; set; }
+        public string CurrentState { get; set; } = null!;
 
         public bool UserCreated { get; set; }
 

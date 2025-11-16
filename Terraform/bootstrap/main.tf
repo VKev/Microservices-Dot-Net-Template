@@ -19,6 +19,21 @@ resource "aws_s3_bucket" "tf_state" {
   force_destroy = local.bucket_force_destroy
 }
 
+# Enable ACLs for CloudFront logging
+resource "aws_s3_bucket_ownership_controls" "tf_state_ownership" {
+  bucket = aws_s3_bucket.tf_state.id
+
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+resource "aws_s3_bucket_acl" "tf_state_acl" {
+  depends_on = [aws_s3_bucket_ownership_controls.tf_state_ownership]
+  bucket     = aws_s3_bucket.tf_state.id
+  acl        = "private"
+}
+
 resource "aws_s3_bucket_versioning" "tf_state_versioning" {
   bucket = aws_s3_bucket.tf_state.id
   versioning_configuration {
@@ -33,6 +48,34 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "tf_state_sse" {
       sse_algorithm = "AES256"
     }
   }
+}
+
+# Allow CloudFront to write logs to this bucket
+resource "aws_s3_bucket_policy" "tf_state_cloudfront_logs" {
+  bucket = aws_s3_bucket.tf_state.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCloudFrontServicePrincipalReadWrite"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action = [
+          "s3:GetBucketAcl",
+          "s3:PutBucketAcl",
+          "s3:PutObject",
+          "s3:PutObjectAcl"
+        ]
+        Resource = [
+          aws_s3_bucket.tf_state.arn,
+          "${aws_s3_bucket.tf_state.arn}/*"
+        ]
+      }
+    ]
+  })
 }
 
 resource "aws_dynamodb_table" "tf_locks" {

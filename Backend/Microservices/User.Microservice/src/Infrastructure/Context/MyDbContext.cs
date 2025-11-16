@@ -24,21 +24,6 @@ public partial class MyDbContext : DbContext
 
     public virtual DbSet<UserRole> UserRoles { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            var host = Environment.GetEnvironmentVariable("DATABASE_HOST") ?? "localhost";
-            var port = Environment.GetEnvironmentVariable("DATABASE_PORT") ?? "5432";
-            var database = Environment.GetEnvironmentVariable("DATABASE_NAME") ?? "userservice_db";
-            var username = Environment.GetEnvironmentVariable("DATABASE_USERNAME") ?? "postgres";
-            var password = Environment.GetEnvironmentVariable("DATABASE_PASSWORD") ?? "password";
-            var sslMode = Environment.GetEnvironmentVariable("DATABASE_SSLMODE") ?? "Prefer";
-            var connectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password};SslMode={sslMode}";
-            optionsBuilder.UseNpgsql(connectionString);
-        }
-    }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasPostgresExtension("pgcrypto");
@@ -93,6 +78,27 @@ public partial class MyDbContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(100)
                 .HasColumnName("name");
+            entity.Property(e => e.ProviderName)
+                .HasMaxLength(100)
+                .HasColumnName("provider_name")
+                .HasDefaultValue("local")
+                .IsRequired(false);
+            entity.Property(e => e.ProviderUserId)
+                .HasMaxLength(100)
+                .HasColumnName("provider_user_id")
+                .IsRequired(false);
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp with time zone")
+                .HasColumnName("updated_at");
+            entity.Property(e => e.DateOfBirth)
+                .HasColumnType("date")
+                .HasColumnName("date_of_birth");
+            entity.Property(e => e.Gender)
+                .HasMaxLength(20)
+                .HasColumnName("gender");
+            entity.Property(e => e.PhoneNumber)
+                .HasMaxLength(20)
+                .HasColumnName("phone_number");
             entity.Property(e => e.PasswordHash)
                 .HasMaxLength(255)
                 .HasColumnName("password_hash");

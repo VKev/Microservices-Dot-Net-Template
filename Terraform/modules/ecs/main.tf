@@ -177,6 +177,7 @@ resource "aws_ecs_service" "this" {
   task_definition = aws_ecs_task_definition.this[each.key].arn
   desired_count   = local.normalized_services[each.key].desired_count
   launch_type     = "EC2"
+  wait_for_steady_state = var.wait_for_steady_state
 
   network_configuration {
     assign_public_ip = local.normalized_services[each.key].assign_public_ip

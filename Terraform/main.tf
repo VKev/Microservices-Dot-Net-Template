@@ -1,8 +1,19 @@
 locals {
-  rabbitmq_host      = "rabbitmq"
-  redis_host         = "redis"
-  guest_service_host = "guest-service"
-  user_service_host  = "user-service"
+  service_discovery_domain = "${var.project_name}.${var.service_discovery_domain_suffix}"
+  rabbitmq_host            = "rabbitmq"
+  redis_host               = "redis"
+  guest_service_host       = "guest-service"
+  user_service_host        = "user-service"
+  n8n_service_connect_host = var.services["n8n"].ecs_service_connect_dns_name
+  n8n_service_port         = var.services.n8n.ecs_container_port_mappings[0].container_port
+
+  # Public endpoint - use CloudFront HTTPS if enabled, otherwise ALB HTTP
+  public_endpoint = var.use_cloudfront_https ? "https://${module.cloudfront[0].cloudfront_domain_name}" : "http://${module.alb.alb_dns_name}"
+
+  # Proxy depth for n8n - CloudFront adds one more hop (CloudFront -> ALB -> Container)
+  # Without CloudFront: 1 (ALB -> Container)
+  # With CloudFront: 2 (CloudFront -> ALB -> Container)
+  n8n_proxy_depth = var.use_cloudfront_https ? 2 : 1
 }
 
 # VPC Module
@@ -21,6 +32,10 @@ module "alb" {
   project_name      = var.project_name
   vpc_id            = module.vpc.vpc_id
   public_subnet_ids = module.vpc.public_subnet_ids
+
+  # SSL/TLS Certificate Configuration
+  certificate_arn       = var.certificate_arn
+  enable_https_redirect = var.enable_https_redirect
 
   target_groups_definition = [
     {
@@ -240,6 +255,7 @@ module "ecs_server1" {
   service_dependencies     = {}
   enable_auto_scaling      = var.enable_auto_scaling
   enable_service_connect   = var.enable_service_connect
+  wait_for_steady_state    = true
 
   # Pass shared resources
   shared_log_group_name     = aws_cloudwatch_log_group.ecs_logs.name
@@ -411,6 +427,7 @@ module "ecs_server2" {
   service_dependencies     = {}
   enable_auto_scaling      = var.enable_auto_scaling
   enable_service_connect   = var.enable_service_connect
+  wait_for_steady_state    = true
 
   # Pass shared resources (same as server-1)
   shared_log_group_name     = aws_cloudwatch_log_group.ecs_logs.name
@@ -520,15 +537,15 @@ module "ecs_server2" {
             [
               {
                 name  = "N8N_EDITOR_BASE_URL"
-                value = "http://${module.alb.alb_dns_name}/n8n/"
+                value = "${local.public_endpoint}/n8n/"
               },
               {
                 name  = "WEBHOOK_URL"
-                value = "http://${module.alb.alb_dns_name}/n8n/"
+                value = "${local.public_endpoint}/n8n/"
               },
               {
                 name  = "VUE_APP_URL_BASE_API"
-                value = "http://${module.alb.alb_dns_name}/n8n/"
+                value = "${local.public_endpoint}/n8n/"
               }
             ]
           )
@@ -579,6 +596,11 @@ server {
     listen 8088;
     server_name _;
     client_max_body_size 50m;
+
+    # Set real IP from CloudFront/ALB (support ${local.n8n_proxy_depth} proxy hops)
+    set_real_ip_from 10.0.0.0/8;
+    real_ip_header X-Forwarded-For;
+    real_ip_recursive on;
 
     location = /n8n {
         return 301 /n8n/;
@@ -654,4 +676,40 @@ EOT
   depends_on = [module.ecs_server1]
 }
 
-## CloudFront and Lambda@Edge modules removed
+# CloudFront Module (Optional - for free HTTPS)
+module "cloudfront" {
+  count  = var.use_cloudfront_https ? 1 : 0
+  source = "./modules/cloudfront"
+
+  project_name = var.project_name
+  alb_dns_name = module.alb.alb_dns_name
+  alb_id       = module.alb.alb_arn
+  enable_caching = var.cloudfront_enable_caching
+
+  # CloudFront settings optimized for API/microservices
+  viewer_protocol_policy = "redirect-to-https"  # Redirect HTTP to HTTPS
+  price_class            = "PriceClass_100"     # Use only North America and Europe (cheapest)
+
+  # Caching configuration
+  min_ttl     = var.cloudfront_enable_caching ? 0 : 0
+  default_ttl = var.cloudfront_enable_caching ? 3600 : 0
+  max_ttl     = var.cloudfront_enable_caching ? 86400 : 0
+  
+  # Forward all cookies, headers, and query strings to support API functionality
+  forward_cookies      = "all"
+  forward_query_string = true
+  forward_headers      = var.cloudfront_enable_caching ? ["Host", "Authorization", "CloudFront-*"] : ["*"]
+
+  # HTTP methods for API support
+  allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"]
+  cached_methods   = var.cloudfront_enable_caching ? ["GET", "HEAD", "OPTIONS"] : []
+  compress         = true
+
+  # CloudFront access logging (for debugging)
+  enable_logging          = var.cloudfront_enable_logging
+  logging_bucket          = var.cloudfront_logging_bucket
+  logging_prefix          = var.cloudfront_logging_prefix
+  logging_include_cookies = var.cloudfront_logging_include_cookies
+
+  depends_on = [module.alb]
+}

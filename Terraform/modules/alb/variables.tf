@@ -57,3 +57,15 @@ variable "listener_rules_definition" {
   }))
   default = []
 }
+
+variable "certificate_arn" {
+  description = "ARN of the SSL/TLS certificate from AWS Certificate Manager for HTTPS listener. If not provided, only HTTP listener will be created."
+  type        = string
+  default     = null
+}
+
+variable "enable_https_redirect" {
+  description = "Whether to redirect HTTP traffic to HTTPS. Only applies if certificate_arn is provided."
+  type        = bool
+  default     = true
+}

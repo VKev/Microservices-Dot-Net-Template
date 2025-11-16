@@ -1,8 +1,6 @@
 using System;
-using SharedLibrary.Utils;
 using SharedLibrary.Configs;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Domain.Repositories;
 using Infrastructure.Repositories;
 using SharedLibrary.Abstractions.UnitOfWork;
@@ -24,44 +22,31 @@ namespace Infrastructure
             services.AddScoped<ISaveChangesUnitOfWork, SaveChangesUnitOfWorkAdapter>();
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddSingleton<EnvironmentConfig>();
-            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-            using var serviceProvider = services.BuildServiceProvider();
-            var logger = serviceProvider.GetRequiredService<ILogger<AutoScaffold>>();
-            var config = serviceProvider.GetRequiredService<EnvironmentConfig>();
-            var scaffold = new AutoScaffold(logger)
-                .Configure(
-                    config.DatabaseHost,
-                    config.DatabasePort,
-                    config.DatabaseName,
-                    config.DatabaseUser,
-                    config.DatabasePassword,
-                    config.DatabaseProvider);
-
-            scaffold.UpdateAppSettings();
-            string solutionDirectory = Directory.GetParent(Directory.GetCurrentDirectory())?.FullName ?? "";
-            if (solutionDirectory != null)
+            services.AddMassTransit(busConfigurator =>
             {
-                DotNetEnv.Env.Load(Path.Combine(solutionDirectory, ".env"));
-            }
-            services.AddMassTransit(busConfigurator => {
                 busConfigurator.SetKebabCaseEndpointNameFormatter();
                 busConfigurator.AddConsumer<UserCreatedConsumer>();
-                busConfigurator.UsingRabbitMq((context, configurator) =>{
-                    if (config.IsRabbitMqCloud)
+                busConfigurator.UsingRabbitMq((context, cfg) =>
+                {
+                    var env = context.GetRequiredService<EnvironmentConfig>();
+
+                    if (env.IsRabbitMqCloud)
                     {
-                        configurator.Host(config.RabbitMqUrl);
+                        cfg.Host(env.RabbitMqUrl);
                     }
                     else
                     {
-                        configurator.Host(new Uri($"rabbitmq://{config.RabbitMqHost}:{config.RabbitMqPort}/"), h=>{
-                            h.Username(config.RabbitMqUser);
-                            h.Password(config.RabbitMqPassword);
+                        cfg.Host(new Uri($"rabbitmq://{env.RabbitMqHost}:{env.RabbitMqPort}/"), h =>
+                        {
+                            h.Username(env.RabbitMqUser);
+                            h.Password(env.RabbitMqPassword);
                         });
                     }
-                    configurator.ConfigureEndpoints(context);
+
+                    cfg.ConfigureEndpoints(context);
                 });
-                
             });
+
             return services;
         }
     }

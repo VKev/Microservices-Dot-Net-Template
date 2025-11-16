@@ -2,6 +2,7 @@ using System;
 using Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
 
 namespace Infrastructure.Context
 {
@@ -20,16 +21,20 @@ namespace Infrastructure.Context
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                var host = Environment.GetEnvironmentVariable("DATABASE_HOST") ?? "localhost";
-                var port = Environment.GetEnvironmentVariable("DATABASE_PORT") ?? "5432";
-                var database = Environment.GetEnvironmentVariable("DATABASE_NAME") ?? "guestservice_db";
-                var username = Environment.GetEnvironmentVariable("DATABASE_USERNAME") ?? "postgres";
-                var password = Environment.GetEnvironmentVariable("DATABASE_PASSWORD") ?? "password";
-                var sslMode = Environment.GetEnvironmentVariable("DATABASE_SSLMODE") ?? "Prefer";
-                connectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password};SslMode={sslMode}";
-            }
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            var config = new ConfigurationBuilder()
+                .AddEnvironmentVariables()
+                .Build();
+
+            var host = config["Database:Host"] ?? config["DATABASE__HOST"] ?? config["DATABASE_HOST"] ?? "localhost";
+            var port = config["Database:Port"] ?? config["DATABASE__PORT"] ?? config["DATABASE_PORT"] ?? "5432";
+            var database = config["Database:Name"] ?? config["DATABASE__NAME"] ?? config["DATABASE_NAME"] ?? "guestservice_db";
+            var username = config["Database:Username"] ?? config["DATABASE__USERNAME"] ?? config["DATABASE_USERNAME"] ?? "postgres";
+            var password = config["Database:Password"] ?? config["DATABASE__PASSWORD"] ?? config["DATABASE_PASSWORD"] ?? "password";
+            var sslMode = config["Database:SslMode"] ?? config["DATABASE__SSLMODE"] ?? config["DATABASE_SSLMODE"] ?? "Prefer";
+            connectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password};SslMode={sslMode}";
+        }
 
             var optionsBuilder = new DbContextOptionsBuilder<MyDbContext>();
             optionsBuilder.UseNpgsql(connectionString!);

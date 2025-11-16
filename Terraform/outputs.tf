@@ -3,6 +3,27 @@ output "alb_dns_name" {
   value       = module.alb.alb_dns_name
 }
 
+# CloudFront Outputs (when enabled)
+output "cloudfront_domain_name" {
+  description = "CloudFront distribution domain name (use this for HTTPS access when CloudFront is enabled)"
+  value       = var.use_cloudfront_https ? module.cloudfront[0].cloudfront_domain_name : null
+}
+
+output "cloudfront_https_url" {
+  description = "Full HTTPS URL to access your application via CloudFront"
+  value       = var.use_cloudfront_https ? module.cloudfront[0].cloudfront_https_url : null
+}
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID"
+  value       = var.use_cloudfront_https ? module.cloudfront[0].cloudfront_distribution_id : null
+}
+
+output "primary_endpoint" {
+  description = "Primary endpoint to access your application (CloudFront HTTPS if enabled, otherwise ALB HTTP)"
+  value       = var.use_cloudfront_https ? module.cloudfront[0].cloudfront_https_url : "http://${module.alb.alb_dns_name}"
+}
+
 
 # VPC Outputs
 output "vpc_id" {

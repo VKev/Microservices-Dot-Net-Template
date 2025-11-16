@@ -26,7 +26,7 @@ services = {
     ecs_service_connect_discovery_name = "user-service"
     ecs_service_connect_port_name      = "user"
     ecs_container_name_suffix          = "microservice"
-    ecs_container_image_repository_url = "936910352865.dkr.ecr.us-east-1.amazonaws.com/vkev-infrastructure-khanghv2406-ecr"
+    ecs_container_image_repository_url = "784180969479.dkr.ecr.us-east-1.amazonaws.com/vkev-infrastructure-khanghv2406-ecr"
     ecs_container_image_tag            = "User.Microservice-latest"
     ecs_container_cpu                  = 120
     ecs_container_memory               = 120
@@ -47,6 +47,7 @@ services = {
       { name = "DATABASE_NAME", value = "userdb" },
       { name = "DATABASE_USERNAME", value = "avnadmin" },
       { name = "DATABASE_PASSWORD", value = "AVNS_vsIotPLRrxJUhcJlM0m" },
+      { name = "DATABASE_SSLMODE", value = "Require" },
       { name = "ASPNETCORE_URLS", value = "http://+:5002" },
       { name = "RABBITMQ_HOST", value = "rabbitmq" },
       { name = "RABBITMQ_PORT", value = "5672" },
@@ -58,7 +59,19 @@ services = {
       { name = "Jwt__SecretKey", value = "YourSuperSecretKeyThatIsAtLeast32CharactersLong!@#$%^&*()" },
       { name = "Jwt__Issuer", value = "UserMicroservice" },
       { name = "Jwt__Audience", value = "MicroservicesApp" },
-      { name = "Jwt__ExpirationMinutes", value = "60" }
+      { name = "Jwt__ExpirationMinutes", value = "60" },
+      { name = "SMTP_HOST", value = "smtp.example.com" },
+      { name = "SMTP_PORT", value = "587" },
+      { name = "SMTP_SECURE", value = "true" },
+      { name = "SMTP_USER", value = "" },
+      { name = "SMTP_PASS", value = "" },
+      { name = "SMTP_FROM_NAME", value = "User Service" },
+      { name = "SMTP_FROM_EMAIL", value = "no-reply@example.com" },
+      { name = "AUTO_APPLY_MIGRATIONS", value = "true" },
+      { name = "Cors__AllowedOrigins__0", value = "http://localhost:5173" },
+      { name = "Cors__AllowedOrigins__1", value = "https://your-frontend.example.com" },
+      { name = "Cors__AllowedOrigins__2", value = "http://localhost:2406" },
+      { name = "ConnectionStrings__DefaultConnection", value = "Host=pg-2-database25812.g.aivencloud.com;Port=19217;Database=userdb;Username=avnadmin;Password=AVNS_vsIotPLRrxJUhcJlM0m;Ssl Mode=Require;" }
     ]
 
     ecs_container_health_check = {

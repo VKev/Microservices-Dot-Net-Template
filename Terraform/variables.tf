@@ -68,6 +68,56 @@ variable "service_discovery_domain_suffix" {
   default     = "svc"
 }
 
+# SSL/TLS Certificate Variable
+variable "certificate_arn" {
+  description = "ARN of the SSL/TLS certificate from AWS Certificate Manager for HTTPS listener. If not provided, only HTTP listener will be created."
+  type        = string
+  default     = null
+}
+
+variable "enable_https_redirect" {
+  description = "Whether to redirect HTTP traffic to HTTPS. Only applies if certificate_arn is provided."
+  type        = bool
+  default     = true
+}
+
+# CloudFront Configuration
+variable "use_cloudfront_https" {
+  description = "Whether to use CloudFront to provide free HTTPS for ALB. When true, CloudFront will be created in front of ALB."
+  type        = bool
+  default     = true
+}
+
+variable "cloudfront_enable_caching" {
+  description = "Whether to enable CloudFront caching. Set to false to pass all requests directly to ALB without caching."
+  type        = bool
+  default     = false
+}
+
+variable "cloudfront_enable_logging" {
+  description = "Enable CloudFront access logging to S3 for debugging (e.g., MoMo IPN issues)"
+  type        = bool
+  default     = false
+}
+
+variable "cloudfront_logging_bucket" {
+  description = "S3 bucket name for CloudFront access logs (without .s3.amazonaws.com suffix). Required if cloudfront_enable_logging = true"
+  type        = string
+  default     = ""
+}
+
+variable "cloudfront_logging_prefix" {
+  description = "Prefix for CloudFront log files in S3 bucket"
+  type        = string
+  default     = "cloudfront-logs/"
+}
+
+variable "cloudfront_logging_include_cookies" {
+  description = "Include cookies in CloudFront access logs"
+  type        = bool
+  default     = false
+}
+
 # Service Definitions Variable
 variable "services" {
   description = "Configuration for each microservice"

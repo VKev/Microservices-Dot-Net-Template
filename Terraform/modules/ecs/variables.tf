@@ -56,6 +56,12 @@ variable "enable_service_connect" {
   default     = false
 }
 
+variable "wait_for_steady_state" {
+  description = "Wait for ECS services to reach a steady state during apply"
+  type        = bool
+  default     = false
+}
+
 variable "service_connect_namespace" {
   description = "Cloud Map namespace to use for ECS Service Connect. Defaults to service discovery domain when unset."
   type        = string

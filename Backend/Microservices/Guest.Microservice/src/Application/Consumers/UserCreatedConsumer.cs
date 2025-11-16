@@ -20,32 +20,54 @@ namespace Application.Consumers
         }
         public async Task Consume(ConsumeContext<UserCreatedEvent> context)
         {
-            try
+            var command = new CreateGuestCommand(context.Message.Name, context.Message.Email);
+            var result = await _sender.Send(command, context.CancellationToken);
+
+            if (result.IsFailure)
             {
-                var command = new CreateGuestCommand(context.Message.Name, context.Message.Email);
-                var result = await _sender.Send(command, context.CancellationToken);
-                if (result.IsFailure)
+                // If the guest already exists, treat it as success to keep the saga flowing
+                if (string.Equals(result.Error.Code, "Guest.EmailExists", StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new Exception($"Failed to create guest: {result.Error}");
+                    await context.Publish(new GuestCreatedEvent
+                    {
+                        CorrelationId = context.Message.CorrelationId,
+                        Name = context.Message.Name,
+                        Email = context.Message.Email,
+                        Password = string.Empty,
+                        ProviderName = "user-service",
+                        ProviderUserId = context.Message.Email
+                    }, context.CancellationToken);
+                    return;
                 }
-                
-                var saveResult = await _sender.Send(new SaveChangesCommand(), context.CancellationToken);
-                if (saveResult.IsFailure)
-                {
-                    throw new Exception($"Failed to save changes: {saveResult.Error}");
-                }
-                
-                await context.Publish(new GuestCreatedEvent
-                {
-                    CorrelationId = context.Message.CorrelationId
-                });
-            }catch(Exception ex){
+
                 await context.Publish(new GuestCreatedFailureEvent
                 {
                     CorrelationId = context.Message.CorrelationId,
-                    Reason = ex.Message
-                });
+                    Reason = result.Error.Description
+                }, context.CancellationToken);
+                return;
             }
+            
+            var saveResult = await _sender.Send(new SaveChangesCommand(), context.CancellationToken);
+            if (saveResult.IsFailure)
+            {
+                await context.Publish(new GuestCreatedFailureEvent
+                {
+                    CorrelationId = context.Message.CorrelationId,
+                    Reason = saveResult.Error.Description
+                }, context.CancellationToken);
+                return;
+            }
+            
+            await context.Publish(new GuestCreatedEvent
+            {
+                CorrelationId = context.Message.CorrelationId,
+                Name = context.Message.Name,
+                Email = context.Message.Email,
+                Password = string.Empty,
+                ProviderName = "user-service",
+                ProviderUserId = context.Message.Email
+            }, context.CancellationToken);
         }
     }
 }

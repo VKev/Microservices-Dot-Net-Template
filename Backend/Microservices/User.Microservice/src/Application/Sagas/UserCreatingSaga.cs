@@ -9,14 +9,14 @@ namespace Application.Sagas
 {
     public class UserCreatingSaga : MassTransitStateMachine<UserCreatingSagaData>
     {
-        public State GuestCreating { get; set; }
-        public State Completed { get; set; }
-        public State Failed { get; set; }
+        public State GuestCreating { get; set; } = null!;
+        public State Completed { get; set; } = null!;
+        public State Failed { get; set; } = null!;
 
 
-        public Event<UserCreatingSagaStart> userCreated { get; set; }
-        public Event<GuestCreatedEvent> GuestCreated { get; set; }
-        public Event<GuestCreatedFailureEvent> GuestCreatedFailed { get; set; }
+        public Event<UserCreatingSagaStart> userCreated { get; set; } = null!;
+        public Event<GuestCreatedEvent> GuestCreated { get; set; } = null!;
+        public Event<GuestCreatedFailureEvent> GuestCreatedFailed { get; set; } = null!;
 
         public UserCreatingSaga()
         {
@@ -58,6 +58,18 @@ namespace Application.Sagas
                     })
                     .TransitionTo(Failed)
             );
+
+            During(Completed,
+                When(GuestCreated)
+                    .Then(context =>
+                    {
+                        // Ignore duplicate GuestCreated events after completion (e.g., redeliveries)
+                    }),
+                When(GuestCreatedFailed)
+                    .Then(context =>
+                    {
+                        // Ignore late failure messages once the saga is already completed
+                    }));
 
             SetCompletedWhenFinalized();
         }

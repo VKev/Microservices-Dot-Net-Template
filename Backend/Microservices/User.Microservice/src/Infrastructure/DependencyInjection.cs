@@ -1,16 +1,14 @@
 using System;
-using SharedLibrary.Utils;
 using SharedLibrary.Configs;
 using SharedLibrary.Common;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Domain.Repositories;
 using Infrastructure.Repositories;
 using SharedLibrary.Abstractions.UnitOfWork;
 using Infrastructure.Common;
 using MassTransit;
 using Application.Sagas;
-using Infrastructure.Context;
+using Application.Consumers;
 using SharedLibrary.Adapters;
 
 namespace Infrastructure
@@ -28,50 +26,40 @@ namespace Infrastructure
             services.AddScoped<ISaveChangesUnitOfWork, SaveChangesUnitOfWorkAdapter>();
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddSingleton<EnvironmentConfig>();
-            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-            using var serviceProvider = services.BuildServiceProvider();
-            var logger = serviceProvider.GetRequiredService<ILogger<AutoScaffold>>();
-            var config = serviceProvider.GetRequiredService<EnvironmentConfig>();
-            var scaffold = new AutoScaffold(logger)
-                    .Configure(
-                        config.DatabaseHost,
-                        config.DatabasePort,
-                        config.DatabaseName,
-                        config.DatabaseUser,
-                        config.DatabasePassword,
-                        config.DatabaseProvider);
-            scaffold.UpdateAppSettings();
-            string solutionDirectory = Directory.GetParent(Directory.GetCurrentDirectory())?.FullName ?? "";
-            if (solutionDirectory != null)
-            {
-                DotNetEnv.Env.Load(Path.Combine(solutionDirectory, ".env"));
-            }
+
+            using var provider = services.BuildServiceProvider();
+            var env = provider.GetRequiredService<EnvironmentConfig>();
+            var redisConnection = $"{env.RedisHost}:{env.RedisPort},password={env.RedisPassword}";
+
             services.AddMassTransit(busConfigurator =>
             {
+                busConfigurator.SetKebabCaseEndpointNameFormatter();
+                busConfigurator.AddConsumer<GuestCreatedConsumer>();
 
                 busConfigurator.AddSagaStateMachine<UserCreatingSaga, UserCreatingSagaData>()
                     .RedisRepository(r =>
                     {
-                        r.DatabaseConfiguration($"{config.RedisHost}:{config.RedisPort},password={config.RedisPassword}");
+                        r.DatabaseConfiguration(redisConnection);
                         r.KeyPrefix = "user-creating-saga";
                         r.Expiry = TimeSpan.FromMinutes(10);
                     });
-                busConfigurator.SetKebabCaseEndpointNameFormatter();
-                busConfigurator.UsingRabbitMq((context, configurator) =>
+
+                busConfigurator.UsingRabbitMq((context, cfg) =>
                 {
-                    if (config.IsRabbitMqCloud)
+                    if (env.IsRabbitMqCloud)
                     {
-                        configurator.Host(config.RabbitMqUrl);
+                        cfg.Host(env.RabbitMqUrl);
                     }
                     else
                     {
-                        configurator.Host(new Uri($"rabbitmq://{config.RabbitMqHost}:{config.RabbitMqPort}/"), h =>
+                        cfg.Host(new Uri($"rabbitmq://{env.RabbitMqHost}:{env.RabbitMqPort}/"), h =>
                         {
-                            h.Username(config.RabbitMqUser);
-                            h.Password(config.RabbitMqPassword);
+                            h.Username(env.RabbitMqUser);
+                            h.Password(env.RabbitMqPassword);
                         });
                     }
-                    configurator.ConfigureEndpoints(context);
+
+                    cfg.ConfigureEndpoints(context);
                 });
             });
             return services;

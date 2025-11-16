@@ -9,6 +9,6 @@ namespace SharedLibrary.Contracts.UserCreating
     {
         public Guid CorrelationId {get; set;}
 
-        public string Reason {get; set;}
+        public string Reason {get; set;} = null!;
     }
 }

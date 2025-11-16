@@ -11,7 +11,6 @@ using Serilog;
 using SharedLibrary.Configs;
 using SharedLibrary.Middleware;
 using SharedLibrary.Migrations;
-using SharedLibrary.Utils;
 
 var solutionDirectory = Directory.GetParent(Directory.GetCurrentDirectory())?.FullName ?? "";
 if (!string.IsNullOrWhiteSpace(solutionDirectory))
@@ -19,12 +18,9 @@ if (!string.IsNullOrWhiteSpace(solutionDirectory))
     DotNetEnv.Env.Load(Path.Combine(solutionDirectory, ".env"));
 }
 
-AutoScaffold.UpdateAppSettingsFile("appsettings.json", "default");
-AutoScaffold.UpdateAppSettingsFile("appsettings.Development.json", "default");
-
 var builder = WebApplication.CreateBuilder(args);
 const string AutoApplyMigrationsEnvVar = "AUTO_APPLY_MIGRATIONS";
-var autoApplySetting = Environment.GetEnvironmentVariable(AutoApplyMigrationsEnvVar);
+var autoApplySetting = builder.Configuration[AutoApplyMigrationsEnvVar];
 var shouldAutoApplyMigrations = bool.TryParse(autoApplySetting, out var parsedAutoApply) && parsedAutoApply;
 
 if (!shouldAutoApplyMigrations)
@@ -72,7 +68,10 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddAuthorization();
 
 builder.Host.UseSerilog((hostingContext, loggerConfiguration) =>
-    loggerConfiguration.ReadFrom.Configuration(hostingContext.Configuration));
+    loggerConfiguration
+        .ReadFrom.Configuration(hostingContext.Configuration)
+        .Enrich.FromLogContext()
+        .WriteTo.Console());
 
 builder.Services.ConfigureOptions<DatabaseConfigSetup>();
 builder.Services.AddDbContext<MyDbContext>((serviceProvider, options) =>
@@ -135,6 +134,6 @@ app.MapControllers();
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("Guest microservice started on port {Port}",
-    Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "5001");
+    builder.Configuration["ASPNETCORE_URLS"] ?? "5001");
 
 app.Run();

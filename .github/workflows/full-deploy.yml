@@ -178,6 +178,8 @@ jobs:
     if: always() && needs.bootstrap-backend.result == 'success'
     outputs:
       alb_dns_name: ${{ steps.terraform-outputs.outputs.alb_dns_name }}
+      cloudfront_https_url: ${{ steps.terraform-outputs.outputs.cloudfront_https_url }}
+      primary_endpoint: ${{ steps.terraform-outputs.outputs.primary_endpoint }}
     environment:
       name: ${{ inputs.environment }}
     env:
@@ -341,8 +343,16 @@ jobs:
         working-directory: Terraform
         run: |
           ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null || echo "")
+          CLOUDFRONT_URL=$(terraform output -raw cloudfront_https_url 2>/dev/null || echo "")
+          PRIMARY_ENDPOINT=$(terraform output -raw primary_endpoint 2>/dev/null || echo "")
+          
           echo "alb_dns_name=$ALB_DNS" >> $GITHUB_OUTPUT
+          echo "cloudfront_https_url=$CLOUDFRONT_URL" >> $GITHUB_OUTPUT
+          echo "primary_endpoint=$PRIMARY_ENDPOINT" >> $GITHUB_OUTPUT
+          
           echo "Extracted ALB DNS: $ALB_DNS"
+          echo "Extracted CloudFront URL: $CLOUDFRONT_URL"
+          echo "Extracted Primary Endpoint: $PRIMARY_ENDPOINT"
 
       - name: Output Terraform results
         if: ${{ inputs.terraform_action == 'apply' }}
@@ -351,6 +361,8 @@ jobs:
           DISCOVERED_SERVICES: ${{ needs.discover-services.outputs.services }}
           SECRETS_JSON: ${{ toJson(secrets) }}
           ALB_DNS: ${{ steps.terraform-outputs.outputs.alb_dns_name }}
+          CLOUDFRONT_URL: ${{ steps.terraform-outputs.outputs.cloudfront_https_url }}
+          PRIMARY_ENDPOINT: ${{ steps.terraform-outputs.outputs.primary_endpoint }}
         run: |
           echo "## 🚀 Terraform Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -359,30 +371,27 @@ jobs:
           echo "**AWS Region**: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
           echo "**Project**: ${{ env.PROJECT_NAME }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Display ALB DNS name if available
-          if [ -n "$ALB_DNS" ]; then
-            echo "### 🌐 Application Load Balancer" >> $GITHUB_STEP_SUMMARY
+
+          # Display primary endpoint (CloudFront HTTPS or ALB HTTP)
+          if [ -n "$PRIMARY_ENDPOINT" ]; then
+            echo "### 🌐 Application Endpoint" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**URL**: \`http://$ALB_DNS\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Access your application at:" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            echo "http://$ALB_DNS" >> $GITHUB_STEP_SUMMARY
+            echo "$PRIMARY_ENDPOINT" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "### 📦 Services Deployed:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # List discovered microservices
           if [ "$DISCOVERED_SERVICES" != "[]" ] && [ -n "$DISCOVERED_SERVICES" ]; then
             echo "$DISCOVERED_SERVICES" | jq -r '.[]' | while read -r service; do
               echo "- ✅ $service" >> $GITHUB_STEP_SUMMARY
             done
           fi
-          
+
           # List additional services from TERRAFORM_VARS_* (non-microservice containers)
           echo "$SECRETS_JSON" | jq -r 'to_entries[] | select(.key | startswith("TERRAFORM_VARS_")) | .key' | while read -r key; do
             suffix=$(echo "$key" | sed 's/^TERRAFORM_VARS_//' | tr '[:upper:]' '[:lower:]')
@@ -391,7 +400,7 @@ jobs:
               echo "- ✅ $suffix" >> $GITHUB_STEP_SUMMARY
             fi
           done
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "**Status**: ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
@@ -400,7 +409,8 @@ jobs:
   deployment-summary:
     name: Deployment Summary
     runs-on: ubuntu-latest
-    needs: [bootstrap-backend, discover-services, build-and-push, terraform-deploy]
+    needs:
+      [bootstrap-backend, discover-services, build-and-push, terraform-deploy]
     if: always()
     environment:
       name: ${{ inputs.environment }}
@@ -410,25 +420,25 @@ jobs:
           DISCOVERED_SERVICES: ${{ needs.discover-services.outputs.services }}
           SECRETS_JSON: ${{ toJson(secrets) }}
           ALB_DNS: ${{ needs.terraform-deploy.outputs.alb_dns_name }}
+          CLOUDFRONT_URL: ${{ needs.terraform-deploy.outputs.cloudfront_https_url }}
+          PRIMARY_ENDPOINT: ${{ needs.terraform-deploy.outputs.primary_endpoint }}
         run: |
           echo "## 🎉 Full Infrastructure Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "**Terraform Action**: ${{ inputs.terraform_action }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
-          # Display ALB URL prominently if available
-          if [ -n "$ALB_DNS" ] && [ "${{ inputs.terraform_action }}" == "apply" ]; then
+
+          # Display primary endpoint (CloudFront HTTPS or ALB HTTP)
+          if [ -n "$PRIMARY_ENDPOINT" ] && [ "${{ inputs.terraform_action }}" == "apply" ]; then
             echo "### 🌐 Your Application is Live!" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Application URL**: http://$ALB_DNS" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            echo "http://$ALB_DNS" >> $GITHUB_STEP_SUMMARY
+            echo "$PRIMARY_ENDPOINT" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "### 📊 Job Results:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
@@ -438,20 +448,20 @@ jobs:
           echo "| Build & Push ECR | ${{ needs.build-and-push.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Terraform Deploy | ${{ needs.terraform-deploy.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           # Dynamic services count
           service_count=0
           if [ "$DISCOVERED_SERVICES" != "[]" ] && [ -n "$DISCOVERED_SERVICES" ]; then
             service_count=$(echo "$DISCOVERED_SERVICES" | jq 'length')
           fi
           terraform_vars_count=$(echo "$SECRETS_JSON" | jq -r 'to_entries[] | select(.key | startswith("TERRAFORM_VARS_")) | .key' | wc -l)
-          
+
           echo "### 📦 Services Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Microservices**: $service_count" >> $GITHUB_STEP_SUMMARY
           echo "- **Terraform Configurations**: $terraform_vars_count" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [ "${{ needs.terraform-deploy.result }}" == "success" ] && [ "${{ inputs.terraform_action }}" == "apply" ]; then
             echo "### ✅ Status: Infrastructure Successfully Deployed!" >> $GITHUB_STEP_SUMMARY
           elif [ "${{ inputs.terraform_action }}" == "destroy" ]; then

@@ -23,11 +23,10 @@ output "http_listener_arn" {
   description = "The ARN of the HTTP listener on port 80."
 }
 
-# If you create an HTTPS listener, you would add its ARN here too.
-# output "https_listener_arn" {
-#   value       = aws_lb_listener.https.arn # Assuming you name it 'https'
-#   description = "The ARN of the HTTPS listener on port 443."
-# }
+output "https_listener_arn" {
+  value       = var.certificate_arn != null ? aws_lb_listener.https[0].arn : null
+  description = "The ARN of the HTTPS listener on port 443. Returns null if HTTPS is not configured."
+}
 
 output "target_group_arns_map" {
   value = {

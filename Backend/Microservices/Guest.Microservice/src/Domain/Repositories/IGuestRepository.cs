@@ -9,6 +9,6 @@ namespace Domain.Repositories
 {
     public interface IGuestRepository : IRepository<Guest>
     {
-        
+        Task<Guest?> GetByEmailAsync(string email, CancellationToken cancellationToken);
     }
 }

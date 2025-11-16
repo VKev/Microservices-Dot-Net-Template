@@ -16,3 +16,19 @@ associate_public_ip = true
 enable_auto_scaling = false
 
 enable_service_connect = true
+
+# HTTPS Configuration Options
+# 
+# OPTION 1: CloudFront HTTPS (Recommended - free, no custom domain required)
+use_cloudfront_https      = true
+cloudfront_enable_caching = false
+
+# CloudFront Access Logging (set bucket if enabling)
+cloudfront_enable_logging          = false
+cloudfront_logging_bucket          = ""
+cloudfront_logging_prefix          = "cloudfront-logs/"
+cloudfront_logging_include_cookies = false
+
+# OPTION 2: ALB with ACM Certificate (requires custom domain)
+certificate_arn       = null
+enable_https_redirect = true
