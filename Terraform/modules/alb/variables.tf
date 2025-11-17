@@ -51,9 +51,9 @@ variable "default_listener_action" {
 variable "listener_rules_definition" {
   description = "List of listener rule configurations applied to the ALB HTTP listener."
   type = list(object({
-    priority             = number
-    target_group_suffix  = string
-    conditions           = list(map(any))
+    priority            = number
+    target_group_suffix = string
+    conditions          = list(map(any))
   }))
   default = []
 }

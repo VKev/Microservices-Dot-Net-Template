@@ -29,7 +29,7 @@ resource "aws_cloudfront_origin_request_policy" "include_cloudfront_headers" {
 
 resource "aws_cloudfront_distribution" "alb_distribution" {
   enabled             = true
-  is_ipv6_enabled     = false  # Disabled for MoMo compatibility (MoMo only supports IPv4)
+  is_ipv6_enabled     = false # Disabled for MoMo compatibility (MoMo only supports IPv4)
   comment             = "CloudFront distribution for ${var.project_name} ALB with HTTPS"
   price_class         = var.price_class
   http_version        = "http2and3"

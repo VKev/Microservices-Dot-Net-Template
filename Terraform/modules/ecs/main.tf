@@ -162,7 +162,7 @@ resource "aws_ecs_task_definition" "this" {
 # Note: Namespace is created externally and passed via service_connect_namespace
 # This resource is kept for backward compatibility but should not be created
 resource "aws_service_discovery_private_dns_namespace" "dns_ns" {
-  count       = 0  # Always disabled - use shared namespace
+  count       = 0 # Always disabled - use shared namespace
   name        = var.service_discovery_domain
   vpc         = var.vpc_id
   description = "Service discovery namespace for ${var.project_name}"
@@ -172,11 +172,11 @@ resource "aws_service_discovery_private_dns_namespace" "dns_ns" {
 resource "aws_ecs_service" "this" {
   for_each = local.service_name_map
 
-  name            = "${var.project_name}-${each.key}"
-  cluster         = var.ecs_cluster_id
-  task_definition = aws_ecs_task_definition.this[each.key].arn
-  desired_count   = local.normalized_services[each.key].desired_count
-  launch_type     = "EC2"
+  name                  = "${var.project_name}-${each.key}"
+  cluster               = var.ecs_cluster_id
+  task_definition       = aws_ecs_task_definition.this[each.key].arn
+  desired_count         = local.normalized_services[each.key].desired_count
+  launch_type           = "EC2"
   wait_for_steady_state = var.wait_for_steady_state
 
   network_configuration {

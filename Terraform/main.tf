@@ -236,6 +236,79 @@ resource "aws_service_discovery_private_dns_namespace" "ecs_namespace" {
   tags        = { Name = "${var.project_name}-dns-namespace" }
 }
 
+locals {
+  rds_definitions = {
+    for key, cfg in var.rds :
+    key => merge({
+      db_name                 = "defaultdb"
+      username                = "avnadmin"
+      password                = ""
+      engine_version          = "15.5"
+      instance_class          = "db.t3.micro"
+      allocated_storage       = 20
+      max_allocated_storage   = 100
+      backup_retention_period = 1
+      deletion_protection     = false
+      publicly_accessible     = false
+      port                    = 5432
+      tags                    = {}
+    }, cfg)
+  }
+}
+
+module "rds" {
+  source   = "./modules/rds"
+  for_each = local.rds_definitions
+
+  project_name               = var.project_name
+  identifier                 = "${var.project_name}-${each.key}-db"
+  db_name                    = each.value.db_name
+  username                   = each.value.username
+  password                   = each.value.password
+  engine_version             = each.value.engine_version
+  instance_class             = each.value.instance_class
+  allocated_storage          = each.value.allocated_storage
+  max_allocated_storage      = each.value.max_allocated_storage
+  backup_retention_period    = each.value.backup_retention_period
+  deletion_protection        = each.value.deletion_protection
+  publicly_accessible        = each.value.publicly_accessible
+  port                       = each.value.port
+  vpc_id                     = module.vpc.vpc_id
+  subnet_ids                 = module.vpc.public_subnet_ids
+  allowed_security_group_ids = [aws_security_group.ecs_task_sg.id]
+
+  tags = merge({
+    Environment = "production"
+    Service     = each.key
+  }, each.value.tags)
+}
+
+locals {
+  rds_lookup = {
+    for key, m in module.rds :
+    key => {
+      host     = m.address
+      port     = m.port
+      db_name  = m.db_name
+      username = m.username
+      password = m.password
+    }
+  }
+
+  rds_placeholder_map = merge([
+    for key, rds in local.rds_lookup : {
+      "TERRAFORM_RDS_HOST_${upper(key)}"       = rds.host
+      "TERRAFORM_RDS_PORT_${upper(key)}"       = tostring(rds.port)
+      "TERRAFORM_RDS_DB_${upper(key)}"         = rds.db_name
+      "TERRAFORM_RDS_USERNAME_${upper(key)}"   = rds.username
+      "TERRAFORM_RDS_PASSWORD_${upper(key)}"   = rds.password
+      "TERRAFORM_RDS_PROVIDER_${upper(key)}"   = "postgres"
+      "TERRAFORM_RDS_SSLMODE_${upper(key)}"    = "Require"
+      "TERRAFORM_RDS_CONNECTION_${upper(key)}" = "Host=${rds.host};Port=${rds.port};Database=${rds.db_name};Username=${rds.username};Password=${rds.password};Ssl Mode=Require;"
+    }
+  ]...)
+}
+
 # ECS Module - Server-1 (User microservice + RabbitMQ + Redis)
 module "ecs_server1" {
   source = "./modules/ecs"
@@ -387,7 +460,13 @@ module "ecs_server1" {
           port_mappings        = var.services["user"].ecs_container_port_mappings
           environment_variables = [
             for env_var in var.services["user"].ecs_environment_variables :
-            env_var
+            merge(env_var, {
+              value = can(element(regexall("TERRAFORM_RDS_[A-Z0-9_]+", env_var.value), 0)) ? replace(
+                env_var.value,
+                element(regexall("TERRAFORM_RDS_[A-Z0-9_]+", env_var.value), 0),
+                lookup(local.rds_placeholder_map, element(regexall("TERRAFORM_RDS_[A-Z0-9_]+", env_var.value), 0), env_var.value)
+              ) : env_var.value
+            })
           ]
           health_check = {
             command     = var.services["user"].ecs_container_health_check.command
@@ -509,7 +588,13 @@ module "ecs_server2" {
           port_mappings        = var.services["guest"].ecs_container_port_mappings
           environment_variables = [
             for env_var in var.services["guest"].ecs_environment_variables :
-            env_var
+            merge(env_var, {
+              value = can(element(regexall("TERRAFORM_RDS_[A-Z0-9_]+", env_var.value), 0)) ? replace(
+                env_var.value,
+                element(regexall("TERRAFORM_RDS_[A-Z0-9_]+", env_var.value), 0),
+                lookup(local.rds_placeholder_map, element(regexall("TERRAFORM_RDS_[A-Z0-9_]+", env_var.value), 0), env_var.value)
+              ) : env_var.value
+            })
           ]
           health_check = {
             command     = var.services["guest"].ecs_container_health_check.command
@@ -681,30 +766,30 @@ module "cloudfront" {
   count  = var.use_cloudfront_https ? 1 : 0
   source = "./modules/cloudfront"
 
-  project_name = var.project_name
-  alb_dns_name = module.alb.alb_dns_name
-  alb_id       = module.alb.alb_arn
+  project_name   = var.project_name
+  alb_dns_name   = module.alb.alb_dns_name
+  alb_id         = module.alb.alb_arn
   enable_caching = var.cloudfront_enable_caching
 
   # CloudFront settings optimized for API/microservices
-  viewer_protocol_policy = "redirect-to-https"  # Redirect HTTP to HTTPS
-  price_class            = "PriceClass_100"     # Use only North America and Europe (cheapest)
+  viewer_protocol_policy = "redirect-to-https" # Redirect HTTP to HTTPS
+  price_class            = "PriceClass_100"    # Use only North America and Europe (cheapest)
 
   # Caching configuration
   min_ttl     = var.cloudfront_enable_caching ? 0 : 0
   default_ttl = var.cloudfront_enable_caching ? 3600 : 0
   max_ttl     = var.cloudfront_enable_caching ? 86400 : 0
-  
+
   # Forward all cookies, headers, and query strings to support API functionality
   forward_cookies      = "all"
   forward_query_string = true
   forward_headers      = var.cloudfront_enable_caching ? ["Host", "Authorization", "CloudFront-*"] : ["*"]
 
   # HTTP methods for API support
-  allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"]
+  allowed_methods = ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"]
   # CloudFront requires cached_methods to be non-empty even when caching is effectively disabled via policies/TTLs
-  cached_methods   = ["GET", "HEAD", "OPTIONS"]
-  compress         = true
+  cached_methods = ["GET", "HEAD", "OPTIONS"]
+  compress       = true
 
   # CloudFront access logging (for debugging)
   enable_logging          = var.cloudfront_enable_logging

@@ -34,7 +34,7 @@ variable "viewer_protocol_policy" {
 variable "viewer_min_protocol_version" {
   description = "Minimum TLS version CloudFront accepts from viewers. TLSv1_2016 supports MoMo's legacy TLS 1.0/1.1 CBC ciphers while maintaining TLS 1.2 security"
   type        = string
-  default     = "TLSv1_2016"  # Changed from TLSv1.2_2021 to support MoMo's older cipher suites
+  default     = "TLSv1_2016" # Changed from TLSv1.2_2021 to support MoMo's older cipher suites
 }
 
 variable "min_ttl" {

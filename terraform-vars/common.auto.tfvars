@@ -17,6 +17,22 @@ enable_auto_scaling = false
 
 enable_service_connect = true
 
+# RDS instances to provision
+rds = {
+  user = {
+    db_name           = "defaultdb"
+    username          = "avnadmin"
+    instance_class    = "db.t3.micro"
+    allocated_storage = 5
+  }
+  guest = {
+    db_name           = "defaultdb"
+    username          = "avnadmin"
+    instance_class    = "db.t3.micro"
+    allocated_storage = 5
+  }
+}
+
 # HTTPS Configuration Options
 # 
 # OPTION 1: CloudFront HTTPS (Recommended - free, no custom domain required)

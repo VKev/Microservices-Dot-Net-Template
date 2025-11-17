@@ -96,7 +96,7 @@ resource "aws_lb_listener" "http" {
   default_action {
     # If HTTPS is enabled and redirect is enabled, redirect HTTP to HTTPS
     type = var.certificate_arn != null && var.enable_https_redirect ? "redirect" : var.default_listener_action.type
-    
+
     target_group_arn = var.default_listener_action.type == "forward" && var.default_listener_action.target_group_suffix != null && !(var.certificate_arn != null && var.enable_https_redirect) ? (
       aws_lb_target_group.this[var.default_listener_action.target_group_suffix].arn
     ) : null

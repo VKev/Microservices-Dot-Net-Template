@@ -43,13 +43,13 @@ services = {
     ecs_environment_variables = [
       { name = "ASPNETCORE_ENVIRONMENT", value = "Production" },
       { name = "ASPNETCORE_URLS", value = "http://+:5002" },
-      { name = "Database__Host", value = "pg-2-database25812.g.aivencloud.com" },
-      { name = "Database__Port", value = "19217" },
-      { name = "Database__Name", value = "userdb" },
-      { name = "Database__Username", value = "avnadmin" },
-      { name = "Database__Password", value = "AVNS_vsIotPLRrxJUhcJlM0m" },
-      { name = "Database__Provider", value = "postgres" },
-      { name = "Database__SslMode", value = "Require" },
+      { name = "Database__Host", value = "TERRAFORM_RDS_HOST_USER" },
+      { name = "Database__Port", value = "TERRAFORM_RDS_PORT_USER" },
+      { name = "Database__Name", value = "TERRAFORM_RDS_DB_USER" },
+      { name = "Database__Username", value = "TERRAFORM_RDS_USERNAME_USER" },
+      { name = "Database__Password", value = "TERRAFORM_RDS_PASSWORD_USER" },
+      { name = "Database__Provider", value = "TERRAFORM_RDS_PROVIDER_USER" },
+      { name = "Database__SslMode", value = "TERRAFORM_RDS_SSLMODE_USER" },
       { name = "RabbitMq__Host", value = "rabbitmq" }, # ECS Service Connect DNS
       { name = "RabbitMq__Port", value = "5672" },
       { name = "RabbitMq__Username", value = "rabbitmq" },
@@ -61,17 +61,10 @@ services = {
       { name = "Jwt__Issuer", value = "UserMicroservice" },
       { name = "Jwt__Audience", value = "MicroservicesApp" },
       { name = "Jwt__ExpirationMinutes", value = "60" },
-      { name = "Smtp__Host", value = "smtp.example.com" },
-      { name = "Smtp__Port", value = "587" },
-      { name = "Smtp__Secure", value = "true" },
-      { name = "Smtp__User", value = "" },
-      { name = "Smtp__Pass", value = "" },
-      { name = "Smtp__From__Name", value = "User Service" },
-      { name = "Smtp__From__Email", value = "no-reply@example.com" },
       { name = "Cors__AllowedOrigins__0", value = "http://localhost:5173" },
       { name = "Cors__AllowedOrigins__1", value = "https://your-frontend.example.com" },
       { name = "Cors__AllowedOrigins__2", value = "http://localhost:2406" },
-      { name = "ConnectionStrings__DefaultConnection", value = "Host=pg-2-database25812.g.aivencloud.com;Port=19217;Database=userdb;Username=avnadmin;Password=AVNS_vsIotPLRrxJUhcJlM0m;Ssl Mode=Require;" }
+      { name = "ConnectionStrings__DefaultConnection", value = "Host=TERRAFORM_RDS_HOST_USER;Port=TERRAFORM_RDS_PORT_USER;Database=TERRAFORM_RDS_DB_USER;Username=TERRAFORM_RDS_USERNAME_USER;Password=TERRAFORM_RDS_PASSWORD_USER;Ssl Mode=TERRAFORM_RDS_SSLMODE_USER;" }
     ]
 
     ecs_container_health_check = {

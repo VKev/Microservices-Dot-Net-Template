@@ -24,6 +24,22 @@ output "primary_endpoint" {
   value       = var.use_cloudfront_https ? module.cloudfront[0].cloudfront_https_url : "http://${module.alb.alb_dns_name}"
 }
 
+output "rds_endpoints" {
+  description = "Map of RDS endpoints keyed by instance key (e.g., user, guest)."
+  value       = { for k, m in module.rds : k => m.endpoint }
+}
+
+output "rds_usernames" {
+  description = "Map of RDS usernames keyed by instance key."
+  value       = { for k, m in module.rds : k => m.username }
+}
+
+output "rds_passwords" {
+  description = "Map of RDS passwords keyed by instance key."
+  value       = { for k, m in module.rds : k => m.password }
+  sensitive   = true
+}
+
 
 # VPC Outputs
 output "vpc_id" {

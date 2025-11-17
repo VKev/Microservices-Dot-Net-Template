@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/tls"
       version = "~> 4.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 
   backend "s3" {
@@ -18,6 +22,6 @@ terraform {
 
 
 provider "aws" {
-  region = var.aws_region  # Use variable to allow switching regions
+  region = var.aws_region # Use variable to allow switching regions
 
 }

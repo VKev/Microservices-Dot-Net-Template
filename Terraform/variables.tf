@@ -62,6 +62,25 @@ variable "enable_service_connect" {
   type        = bool
   default     = false
 }
+
+variable "rds" {
+  description = "Map of RDS instances to create (keyed, e.g., \"user\", \"guest\")."
+  type = map(object({
+    db_name                 = optional(string, "defaultdb")
+    username                = optional(string, "avnadmin")
+    password                = optional(string, "")
+    engine_version          = optional(string, "15.5")
+    instance_class          = optional(string, "db.t3.micro")
+    allocated_storage       = optional(number, 20)
+    max_allocated_storage   = optional(number, 100)
+    backup_retention_period = optional(number, 1)
+    deletion_protection     = optional(bool, false)
+    publicly_accessible     = optional(bool, false)
+    port                    = optional(number, 5432)
+    tags                    = optional(map(string), {})
+  }))
+  default = {}
+}
 variable "service_discovery_domain_suffix" {
   description = "Suffix used to build the private DNS namespace for service discovery (e.g. \"svc\" => <project>.svc)"
   type        = string
