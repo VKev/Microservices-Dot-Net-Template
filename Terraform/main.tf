@@ -18,12 +18,12 @@ locals {
 
 # VPC Module
 module "vpc" {
-  source              = "./modules/vpc"
-  project_name        = var.project_name
-  vpc_cidr            = var.vpc_cidr
-  public_subnet_cidrs = var.public_subnet_cidrs
-  public_subnet_count = 2
-  private_subnet_cidr = var.private_subnet_cidr
+  source               = "./modules/vpc"
+  project_name         = var.project_name
+  vpc_cidr             = var.vpc_cidr
+  public_subnet_cidrs  = var.public_subnet_cidrs
+  public_subnet_count  = 2
+  private_subnet_cidrs = var.private_subnet_cidrs
 }
 
 # ALB Module
@@ -96,7 +96,7 @@ module "ec2" {
   project_name          = var.project_name
   vpc_id                = module.vpc.vpc_id
   vpc_cidr              = var.vpc_cidr
-  subnet_id             = module.vpc.private_subnet_id
+  subnet_id             = module.vpc.public_subnet_ids[0]
   instance_type         = var.instance_type
   associate_public_ip   = var.associate_public_ip
   alb_security_group_id = module.alb.alb_sg_id
