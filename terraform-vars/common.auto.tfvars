@@ -22,12 +22,14 @@ rds = {
   user = {
     db_name           = "defaultdb"
     username          = "avnadmin"
+    engine_version    = "15.4"
     instance_class    = "db.t3.micro"
     allocated_storage = 5
   }
   guest = {
     db_name           = "defaultdb"
     username          = "avnadmin"
+    engine_version    = "15.4"
     instance_class    = "db.t3.micro"
     allocated_storage = 5
   }

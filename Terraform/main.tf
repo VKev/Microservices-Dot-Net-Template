@@ -284,8 +284,8 @@ module "rds" {
 }
 
 resource "aws_secretsmanager_secret" "dockerhub" {
-  count       = var.dockerhub_credentials_secret_arn == null && var.dockerhub_username != "" && var.dockerhub_password != "" ? 1 : 0
-  name_prefix = "${var.project_name}-dockerhub-creds-"
+  count = var.dockerhub_credentials_secret_arn == null && var.dockerhub_username != "" && var.dockerhub_password != "" ? 1 : 0
+  name  = "ecr-pullthroughcache/${var.dockerhub_pull_through_prefix}-${var.project_name}"
 }
 
 resource "aws_secretsmanager_secret_version" "dockerhub" {
