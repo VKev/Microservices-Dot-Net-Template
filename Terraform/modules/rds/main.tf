@@ -6,6 +6,7 @@ resource "random_password" "db_password" {
   count   = var.password == "" ? 1 : 0
   length  = 24
   special = true
+  override_special = "!#$%&()*+,-.:;<=>?[]^_{|}~" # exclude '/', '@', '\"', and space
 }
 
 resource "aws_db_subnet_group" "this" {
