@@ -321,17 +321,24 @@ module "rds" {
   }, each.value.tags)
 }
 
+# -----------------------------
+# Docker Hub Pull-Through Cache
+# -----------------------------
 resource "aws_secretsmanager_secret" "dockerhub" {
   count = var.dockerhub_credentials_secret_arn == null && var.dockerhub_username != "" && var.dockerhub_password != "" ? 1 : 0
-  name  = "ecr-pullthroughcache/${var.dockerhub_pull_through_prefix}-${var.project_name}"
+
+  # Must start with ecr-pullthroughcache/
+  name = "ecr-pullthroughcache/${var.dockerhub_pull_through_prefix}-${var.project_name}"
 }
 
 resource "aws_secretsmanager_secret_version" "dockerhub" {
   count     = length(aws_secretsmanager_secret.dockerhub) == 0 ? 0 : 1
   secret_id = aws_secretsmanager_secret.dockerhub[0].id
+
+  # IMPORTANT: ECR expects { "username": "...", "accessToken": "..." }
   secret_string = jsonencode({
-    username = var.dockerhub_username
-    password = var.dockerhub_password
+    username    = var.dockerhub_username
+    accessToken = var.dockerhub_password  # your Docker Hub PAT (dckr_pat_...)
   })
 }
 
@@ -340,7 +347,12 @@ resource "aws_ecr_pull_through_cache_rule" "dockerhub" {
 
   ecr_repository_prefix = var.dockerhub_pull_through_prefix
   upstream_registry_url = var.dockerhub_pull_through_registry
-  credential_arn        = coalesce(var.dockerhub_credentials_secret_arn, try(aws_secretsmanager_secret.dockerhub[0].arn, null))
+
+  # Use external secret ARN if provided, otherwise the one we just created
+  credential_arn = coalesce(
+    var.dockerhub_credentials_secret_arn,
+    try(aws_secretsmanager_secret.dockerhub[0].arn, null)
+  )
 }
 
 locals {
