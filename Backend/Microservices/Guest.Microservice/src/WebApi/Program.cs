@@ -19,8 +19,16 @@ if (!string.IsNullOrWhiteSpace(solutionDirectory))
 }
 
 var builder = WebApplication.CreateBuilder(args);
-// Disable automatic EF Core migrations; migrations should be applied manually
-builder.Services.Replace(ServiceDescriptor.Scoped<IMigrator, NoOpMigrator>());
+// Allow automatic EF Core migrations when enabled via env
+const string AutoApplyMigrationsEnvVar = "AutoApply__Migrations";
+var autoApplySetting = builder.Configuration["AutoApply:Migrations"]
+                        ?? builder.Configuration[AutoApplyMigrationsEnvVar];
+var shouldAutoApplyMigrations = bool.TryParse(autoApplySetting, out var parsedAutoApply) && parsedAutoApply;
+
+if (!shouldAutoApplyMigrations)
+{
+    builder.Services.Replace(ServiceDescriptor.Scoped<IMigrator, NoOpMigrator>());
+}
 
 var environment = builder.Environment;
 
@@ -89,6 +97,34 @@ builder.Services
     .AddInfrastructure();
 
 var app = builder.Build();
+
+if (shouldAutoApplyMigrations)
+{
+    using var scope = app.Services.CreateScope();
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+        var pending = dbContext.Database.GetPendingMigrations().ToList();
+        if (pending.Count > 0)
+        {
+          app.Logger.LogInformation("Applying {Count} pending EF Core migrations: {Migrations}", pending.Count, string.Join(", ", pending));
+          dbContext.Database.Migrate();
+          app.Logger.LogInformation("EF Core migrations applied successfully at startup.");
+        }
+        else
+        {
+          app.Logger.LogInformation("No pending EF Core migrations detected; skipping apply.");
+        }
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Failed to apply EF Core migrations at startup. Continuing without applying migrations.");
+    }
+}
+else
+{
+    app.Logger.LogInformation("EF Core migrations skipped (set {EnvVar}=true to enable).", AutoApplyMigrationsEnvVar);
+}
 
 app.MapGet("/health", () => new { status = "ok" });
 app.MapGet("/api/health", () => new { status = "ok" });

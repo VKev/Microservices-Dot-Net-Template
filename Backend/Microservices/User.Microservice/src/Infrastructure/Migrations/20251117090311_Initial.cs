@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddIsVerifiedToUser : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -31,7 +31,7 @@ namespace Infrastructure.Migrations
                 {
                     role_id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     role_name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP")
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
@@ -46,6 +46,12 @@ namespace Infrastructure.Migrations
                     name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     password_hash = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    provider_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true, defaultValue: "local"),
+                    provider_user_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    date_of_birth = table.Column<DateTime>(type: "date", nullable: true),
+                    gender = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    phone_number = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     refresh_token = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     refresh_token_expiry = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP"),
@@ -62,7 +68,7 @@ namespace Infrastructure.Migrations
                 {
                     user_id = table.Column<Guid>(type: "uuid", nullable: false),
                     role_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    assigned_at = table.Column<DateTime>(type: "timestamp without time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP")
+                    assigned_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {

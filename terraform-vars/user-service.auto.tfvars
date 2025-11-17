@@ -61,6 +61,7 @@ services = {
       { name = "Jwt__Issuer", value = "UserMicroservice" },
       { name = "Jwt__Audience", value = "MicroservicesApp" },
       { name = "Jwt__ExpirationMinutes", value = "60" },
+      { name = "AutoApply__Migrations", value = "true" },
       { name = "Cors__AllowedOrigins__0", value = "http://localhost:5173" },
       { name = "Cors__AllowedOrigins__1", value = "https://your-frontend.example.com" },
       { name = "Cors__AllowedOrigins__2", value = "http://localhost:2406" },
