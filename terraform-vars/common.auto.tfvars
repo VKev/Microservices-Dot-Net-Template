@@ -24,6 +24,7 @@ rds = {
     username          = "avnadmin"
     engine_version    = "18.1"
     instance_class    = "db.t3.micro"
+    password          = "0Kg04De04"
     allocated_storage = 5
   }
   guest = {
@@ -31,6 +32,7 @@ rds = {
     username          = "avnadmin"
     engine_version    = "18.1"
     instance_class    = "db.t3.micro"
+    password          = "0Kg04De04"
     allocated_storage = 5
   }
 }
