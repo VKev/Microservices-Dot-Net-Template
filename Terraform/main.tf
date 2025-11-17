@@ -186,6 +186,44 @@ resource "aws_iam_role_policy_attachment" "ecs_task_ecr_pull" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+data "aws_caller_identity" "current" {}
+
+data "aws_iam_policy_document" "ecs_task_ecr_ptc" {
+  statement {
+    sid = "EcrPullThroughCacheAccess"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:BatchImportUpstreamImage",
+      "ecr:CreateRepository",
+      "ecr:DescribeImages",
+      "ecr:DescribeRepositories",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:ListImages",
+    ]
+
+    resources = [
+      "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/${var.dockerhub_pull_through_prefix}/*",
+    ]
+  }
+
+  statement {
+    sid       = "EcrAuthToken"
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "ecs_task_ecr_ptc" {
+  name   = "${var.project_name}-ecs-ecr-ptc"
+  policy = data.aws_iam_policy_document.ecs_task_ecr_ptc.json
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_ecr_ptc_attach" {
+  role       = aws_iam_role.ecs_execution_role.name
+  policy_arn = aws_iam_policy.ecs_task_ecr_ptc.arn
+}
+
 resource "aws_security_group" "ecs_task_sg" {
   name_prefix = "${var.project_name}-ecs-task-sg-"
   description = "Security group for ECS tasks (awsvpc)"
