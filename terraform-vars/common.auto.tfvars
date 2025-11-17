@@ -40,7 +40,6 @@ rds = {
 # Docker Hub pull-through cache (fill in your Secrets Manager ARN for Docker Hub creds)
 dockerhub_pull_through_prefix    = "dockerhub"
 dockerhub_pull_through_registry  = "registry-1.docker.io"
-dockerhub_credentials_secret_arn = null
 
 # Docker Hub credentials (username/password or token) used when creating the pull-through cache rule
 dockerhub_username = "vkev25811"
