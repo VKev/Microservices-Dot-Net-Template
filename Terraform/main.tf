@@ -186,6 +186,14 @@ resource "aws_iam_role_policy_attachment" "ecs_task_ecr_pull" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+data "aws_caller_identity" "current" {}
+
+resource "aws_ecr_pull_through_cache_rule" "dockerhub" {
+  ecr_repository_prefix = "dockerhub"
+  upstream_registry_url = "registry-1.docker.io"
+
+  depends_on = [aws_iam_role_policy_attachment.ecs_task_ecr_pull]
+}
 resource "aws_security_group" "ecs_task_sg" {
   name_prefix = "${var.project_name}-ecs-task-sg-"
   description = "Security group for ECS tasks (awsvpc)"
@@ -317,11 +325,11 @@ module "ecs_server1" {
   aws_region               = var.aws_region
   vpc_id                   = module.vpc.vpc_id
   vpc_cidr                 = var.vpc_cidr
-  task_subnet_ids          = [module.vpc.private_subnet_id]
+  task_subnet_ids          = module.vpc.public_subnet_ids
   ecs_cluster_id           = module.ec2.ecs_cluster_arn
   ecs_cluster_name         = module.ec2.ecs_cluster_name
   alb_security_group_id    = module.alb.alb_sg_id
-  assign_public_ip         = false
+  assign_public_ip         = true
   desired_count            = 1
   service_names            = ["server-1"]
   service_discovery_domain = "${var.project_name}.${var.service_discovery_domain_suffix}"
@@ -499,7 +507,7 @@ module "ecs_server2" {
   ecs_cluster_id           = module.ec2.ecs_cluster_arn
   ecs_cluster_name         = module.ec2.ecs_cluster_name
   alb_security_group_id    = module.alb.alb_sg_id
-  assign_public_ip         = false
+  assign_public_ip         = true
   desired_count            = 1
   service_names            = ["server-2"]
   service_discovery_domain = "${var.project_name}.${var.service_discovery_domain_suffix}"
