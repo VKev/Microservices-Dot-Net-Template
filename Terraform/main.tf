@@ -186,14 +186,6 @@ resource "aws_iam_role_policy_attachment" "ecs_task_ecr_pull" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
-data "aws_caller_identity" "current" {}
-
-resource "aws_ecr_pull_through_cache_rule" "dockerhub" {
-  ecr_repository_prefix = "dockerhub"
-  upstream_registry_url = "registry-1.docker.io"
-
-  depends_on = [aws_iam_role_policy_attachment.ecs_task_ecr_pull]
-}
 resource "aws_security_group" "ecs_task_sg" {
   name_prefix = "${var.project_name}-ecs-task-sg-"
   description = "Security group for ECS tasks (awsvpc)"
@@ -251,7 +243,7 @@ locals {
       db_name                 = "defaultdb"
       username                = "avnadmin"
       password                = ""
-      engine_version          = "15.5"
+      engine_version          = "15.4"
       instance_class          = "db.t3.micro"
       allocated_storage       = 20
       max_allocated_storage   = 100
@@ -282,13 +274,35 @@ module "rds" {
   publicly_accessible        = each.value.publicly_accessible
   port                       = each.value.port
   vpc_id                     = module.vpc.vpc_id
-  subnet_ids                 = module.vpc.public_subnet_ids
+  subnet_ids                 = module.vpc.private_subnet_ids
   allowed_security_group_ids = [aws_security_group.ecs_task_sg.id]
 
   tags = merge({
     Environment = "production"
     Service     = each.key
   }, each.value.tags)
+}
+
+resource "aws_secretsmanager_secret" "dockerhub" {
+  count       = var.dockerhub_credentials_secret_arn == null && var.dockerhub_username != "" && var.dockerhub_password != "" ? 1 : 0
+  name_prefix = "${var.project_name}-dockerhub-creds-"
+}
+
+resource "aws_secretsmanager_secret_version" "dockerhub" {
+  count     = length(aws_secretsmanager_secret.dockerhub) == 0 ? 0 : 1
+  secret_id = aws_secretsmanager_secret.dockerhub[0].id
+  secret_string = jsonencode({
+    username = var.dockerhub_username
+    password = var.dockerhub_password
+  })
+}
+
+resource "aws_ecr_pull_through_cache_rule" "dockerhub" {
+  count = var.dockerhub_credentials_secret_arn != null || (var.dockerhub_username != "" && var.dockerhub_password != "") ? 1 : 0
+
+  ecr_repository_prefix = var.dockerhub_pull_through_prefix
+  upstream_registry_url = var.dockerhub_pull_through_registry
+  credential_arn        = coalesce(var.dockerhub_credentials_secret_arn, try(aws_secretsmanager_secret_version.dockerhub[0].arn, null))
 }
 
 locals {
@@ -503,7 +517,7 @@ module "ecs_server2" {
   aws_region               = var.aws_region
   vpc_id                   = module.vpc.vpc_id
   vpc_cidr                 = var.vpc_cidr
-  task_subnet_ids          = [module.vpc.private_subnet_id]
+  task_subnet_ids          = module.vpc.public_subnet_ids
   ecs_cluster_id           = module.ec2.ecs_cluster_arn
   ecs_cluster_name         = module.ec2.ecs_cluster_name
   alb_security_group_id    = module.alb.alb_sg_id

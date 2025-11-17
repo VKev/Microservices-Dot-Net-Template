@@ -6,7 +6,7 @@ region       = "us-east-1"
 # VPC Configuration
 vpc_cidr            = "10.0.0.0/16"
 public_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
-private_subnet_cidr = "10.0.3.0/24"
+private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
 
 # EC2 Configuration
 instance_type       = "t3.micro"
@@ -32,6 +32,15 @@ rds = {
     allocated_storage = 5
   }
 }
+
+# Docker Hub pull-through cache (fill in your Secrets Manager ARN for Docker Hub creds)
+dockerhub_pull_through_prefix    = "dockerhub"
+dockerhub_pull_through_registry  = "registry-1.docker.io"
+dockerhub_credentials_secret_arn = null
+
+# Docker Hub credentials (username/password or token) used when creating the pull-through cache rule
+dockerhub_username = "vkev25811"
+dockerhub_password = "dckr_pat_nUed28fLRme1JywY0Qc0nohY6cA"
 
 # HTTPS Configuration Options
 # 

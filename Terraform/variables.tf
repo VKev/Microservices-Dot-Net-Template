@@ -25,10 +25,10 @@ variable "public_subnet_cidrs" {
   default     = ["10.0.1.0/24", "10.0.2.0/24"]
 }
 
-variable "private_subnet_cidr" {
-  description = "CIDR block for the private subnet"
-  type        = string
-  default     = "10.0.3.0/24"
+variable "private_subnet_cidrs" {
+  description = "CIDR blocks for the private subnets (at least two for RDS subnet group)"
+  type        = list(string)
+  default     = ["10.0.3.0/24", "10.0.4.0/24"]
 }
 
 # EC2 Variables
@@ -85,6 +85,38 @@ variable "service_discovery_domain_suffix" {
   description = "Suffix used to build the private DNS namespace for service discovery (e.g. \"svc\" => <project>.svc)"
   type        = string
   default     = "svc"
+}
+
+# Docker Hub pull-through cache configuration
+variable "dockerhub_pull_through_prefix" {
+  description = "ECR repository prefix for Docker Hub pull-through cache rule."
+  type        = string
+  default     = "dockerhub"
+}
+
+variable "dockerhub_pull_through_registry" {
+  description = "Upstream Docker Hub registry URL."
+  type        = string
+  default     = "registry-1.docker.io"
+}
+
+variable "dockerhub_credentials_secret_arn" {
+  description = "Secrets Manager ARN containing Docker Hub credentials (username/password) for the pull-through cache rule."
+  type        = string
+  default     = null
+}
+
+variable "dockerhub_username" {
+  description = "Docker Hub username used to create the pull-through cache rule (ignored if dockerhub_credentials_secret_arn is set)."
+  type        = string
+  default     = ""
+}
+
+variable "dockerhub_password" {
+  description = "Docker Hub password/token used to create the pull-through cache rule (ignored if dockerhub_credentials_secret_arn is set)."
+  type        = string
+  default     = ""
+  sensitive   = true
 }
 
 # SSL/TLS Certificate Variable
