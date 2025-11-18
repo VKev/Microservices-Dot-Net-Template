@@ -32,6 +32,30 @@ locals {
       tags                    = {}
     }, cfg)
   }
+
+  rds_lookup = {
+    for key, m in module.rds :
+    key => {
+      host     = m.address
+      port     = m.port
+      db_name  = m.db_name
+      username = m.username
+      password = m.password
+    }
+  }
+
+  rds_placeholder_map = merge([
+    for key, rds in local.rds_lookup : {
+      "TERRAFORM_RDS_HOST_${upper(key)}"       = rds.host
+      "TERRAFORM_RDS_PORT_${upper(key)}"       = tostring(rds.port)
+      "TERRAFORM_RDS_DB_${upper(key)}"         = rds.db_name
+      "TERRAFORM_RDS_USERNAME_${upper(key)}"   = rds.username
+      "TERRAFORM_RDS_PASSWORD_${upper(key)}"   = rds.password
+      "TERRAFORM_RDS_PROVIDER_${upper(key)}"   = "postgres"
+      "TERRAFORM_RDS_SSLMODE_${upper(key)}"    = "Require"
+      "TERRAFORM_RDS_CONNECTION_${upper(key)}" = "Host=${rds.host};Port=${rds.port};Database=${rds.db_name};Username=${rds.username};Password=${rds.password};Ssl Mode=Require;"
+    }
+  ]...)
 }
 
 # VPC Module
