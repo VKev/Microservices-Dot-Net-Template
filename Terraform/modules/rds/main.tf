@@ -10,8 +10,8 @@ resource "random_password" "db_password" {
 }
 
 resource "aws_db_subnet_group" "this" {
-  name       = "${var.identifier}-subnets"
-  subnet_ids = var.subnet_ids
+  name_prefix = "${var.identifier}-subnets-"
+  subnet_ids  = var.subnet_ids
 
   tags = merge({
     Name    = "${var.project_name}-${var.identifier}-subnets"
