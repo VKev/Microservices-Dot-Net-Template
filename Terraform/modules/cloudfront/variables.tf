@@ -137,5 +137,5 @@ variable "s3_path_pattern" {
 variable "s3_use_oac" {
   description = "Whether to use Origin Access Control (OAC) for the S3 origin. Set to false if using S3 Presigned URLs."
   type        = bool
-  default     = true
+  default     = false
 }
