@@ -114,3 +114,22 @@ variable "logging_include_cookies" {
   type        = bool
   default     = false
 }
+
+# S3 Origin Configuration
+variable "s3_bucket_domain_name" {
+  description = "The domain name of the S3 bucket to use as an origin (e.g., my-bucket.s3.us-east-1.amazonaws.com)"
+  type        = string
+  default     = ""
+}
+
+variable "s3_origin_id" {
+  description = "Unique identifier for the S3 origin"
+  type        = string
+  default     = "S3-Origin"
+}
+
+variable "s3_path_pattern" {
+  description = "Path pattern to route to S3 origin (e.g., /static/*)"
+  type        = string
+  default     = "/static/*"
+}

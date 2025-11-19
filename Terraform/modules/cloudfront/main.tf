@@ -27,6 +27,14 @@ resource "aws_cloudfront_origin_request_policy" "include_cloudfront_headers" {
   }
 }
 
+resource "aws_cloudfront_origin_access_control" "s3_oac" {
+  name                              = "${var.project_name}-s3-oac"
+  description                       = "OAC for ${var.project_name} S3 origin"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
 resource "aws_cloudfront_distribution" "alb_distribution" {
   enabled             = true
   is_ipv6_enabled     = false # Disabled for MoMo compatibility (MoMo only supports IPv4)
@@ -54,6 +62,15 @@ resource "aws_cloudfront_distribution" "alb_distribution" {
     }
   }
 
+  dynamic "origin" {
+    for_each = var.s3_bucket_domain_name != "" ? [1] : []
+    content {
+      domain_name              = var.s3_bucket_domain_name
+      origin_access_control_id = aws_cloudfront_origin_access_control.s3_oac.id
+      origin_id                = var.s3_origin_id
+    }
+  }
+
   default_cache_behavior {
     target_origin_id       = "${var.project_name}-alb-origin"
     allowed_methods        = var.allowed_methods
@@ -64,6 +81,29 @@ resource "aws_cloudfront_distribution" "alb_distribution" {
     # AWS Managed CachingDisabled Policy ID (same across all regions)
     cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
     origin_request_policy_id = aws_cloudfront_origin_request_policy.include_cloudfront_headers.id
+  }
+
+  dynamic "ordered_cache_behavior" {
+    for_each = var.s3_bucket_domain_name != "" ? [1] : []
+    content {
+      path_pattern     = var.s3_path_pattern
+      allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+      cached_methods   = ["GET", "HEAD", "OPTIONS"]
+      target_origin_id = var.s3_origin_id
+
+      forwarded_values {
+        query_string = false
+        cookies {
+          forward = "none"
+        }
+      }
+
+      viewer_protocol_policy = "redirect-to-https"
+      min_ttl                = 0
+      default_ttl            = 3600
+      max_ttl                = 86400
+      compress               = true
+    }
   }
 
   restrictions {

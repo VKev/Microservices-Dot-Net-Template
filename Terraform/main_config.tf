@@ -34,8 +34,8 @@ locals {
     service => merge(
       local.rds_config_defaults,
       {
-        service  = service
-        db_name  = coalesce(
+        service = service
+        db_name = coalesce(
           lookup(cfg, "db_name", null),
           try(distinct(coalescelist(try(cfg.db_names, null), [lookup(cfg, "db_name", "defaultdb")]))[0], null),
           "defaultdb"
@@ -73,7 +73,7 @@ locals {
         "TERRAFORM_RDS_CONNECTION_${upper(rds.service)}" = "Host=${rds.host};Port=${rds.port};Database=${rds.db_name};Username=${rds.username};Password=${rds.password};Ssl Mode=Require;"
       },
       merge([
-        for db in (length(rds.db_names) > 0 ? rds.db_names : [rds.db_name]) : {
+        for db in(length(rds.db_names) > 0 ? rds.db_names : [rds.db_name]) : {
           "TERRAFORM_RDS_HOST_${upper(rds.service)}_${upper(db)}"       = rds.host
           "TERRAFORM_RDS_PORT_${upper(rds.service)}_${upper(db)}"       = tostring(rds.port)
           "TERRAFORM_RDS_DB_${upper(rds.service)}_${upper(db)}"         = db
@@ -302,6 +302,10 @@ module "cloudfront" {
   logging_bucket          = var.cloudfront_logging_bucket
   logging_prefix          = var.cloudfront_logging_prefix
   logging_include_cookies = var.cloudfront_logging_include_cookies
+
+  # S3 Origin
+  s3_bucket_domain_name = var.static_assets_bucket_domain_name
+  s3_path_pattern       = "/static/*"
 
   depends_on = [module.alb]
 }

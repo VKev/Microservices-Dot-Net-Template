@@ -73,6 +73,27 @@ resource "aws_s3_bucket_policy" "tf_state_cloudfront_logs" {
           aws_s3_bucket.tf_state.arn,
           "${aws_s3_bucket.tf_state.arn}/*"
         ]
+      },
+      {
+        Sid    = "AllowCloudFrontAccess"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.tf_state.arn,
+          "${aws_s3_bucket.tf_state.arn}/*"
+        ]
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = var.cloudfront_distribution_arn
+          }
+        }
       }
     ]
   })

@@ -10,9 +10,13 @@ variable "project_name" {
 }
 
 variable "dynamodb_table_name" {
-  description = "Base name of the DynamoDB table (auto-derived)"
+  description = "Name of the DynamoDB table for state locking"
   type        = string
   default     = "terraform-locks"
 }
 
-
+variable "cloudfront_distribution_arn" {
+  description = "ARN of the CloudFront distribution to allow access to the bucket"
+  type        = string
+  default     = null
+}

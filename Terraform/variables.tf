@@ -237,3 +237,9 @@ variable "services" {
   sensitive = true
 
 }
+
+variable "static_assets_bucket_domain_name" {
+  description = "Domain name of the S3 bucket for static assets (e.g., my-bucket.s3.us-east-1.amazonaws.com)"
+  type        = string
+  default     = ""
+}
