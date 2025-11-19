@@ -15,29 +15,25 @@ locals {
   # With CloudFront: 2 (CloudFront -> ALB -> Container)
   n8n_proxy_depth = var.use_cloudfront_https ? 2 : 1
 
-  rds_definitions = {
-    for cfg in flatten([
-      for key, cfg in var.rds : [
-        for db in coalesce(try(cfg.db_names, null), [lookup(cfg, "db_name", "defaultdb")]) : merge({
-          service = key
-          db_name = db
-          }, {
-          username                = "avnadmin"
-          password                = ""
-          engine_version          = "15.4"
-          instance_class          = "db.t3.micro"
-          allocated_storage       = 20
-          max_allocated_storage   = 100
-          backup_retention_period = 1
-          deletion_protection     = false
-          publicly_accessible     = false
-          port                    = 5432
-          tags                    = {}
-        }, cfg)
-      ]
-    ]) :
-    "${cfg.service}-${cfg.db_name}" => cfg
-  }
+  rds_definitions = merge([
+    for service, cfg in var.rds : {
+      for db in toset(coalesce(try(cfg.db_names, null), [lookup(cfg, "db_name", "defaultdb")])) : "${service}-${db}" => merge({
+        service                 = service
+        db_name                 = db
+        username                = "avnadmin"
+        password                = ""
+        engine_version          = "15.4"
+        instance_class          = "db.t3.micro"
+        allocated_storage       = 20
+        max_allocated_storage   = 100
+        backup_retention_period = 1
+        deletion_protection     = false
+        publicly_accessible     = false
+        port                    = 5432
+        tags                    = {}
+      }, cfg)
+    }
+  ]...)
 
   rds_lookup = {
     for key, m in module.rds :
