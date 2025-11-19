@@ -43,13 +43,13 @@ services = {
     ecs_environment_variables = [
       { name = "ASPNETCORE_ENVIRONMENT", value = "Production" },
       { name = "ASPNETCORE_URLS", value = "http://+:5002" },
-      { name = "Database__Host", value = "TERRAFORM_RDS_HOST_USER" },
-      { name = "Database__Port", value = "TERRAFORM_RDS_PORT_USER" },
-      { name = "Database__Name", value = "TERRAFORM_RDS_DB_USER" },
-      { name = "Database__Username", value = "TERRAFORM_RDS_USERNAME_USER" },
-      { name = "Database__Password", value = "TERRAFORM_RDS_PASSWORD_USER" },
-      { name = "Database__Provider", value = "TERRAFORM_RDS_PROVIDER_USER" },
-      { name = "Database__SslMode", value = "TERRAFORM_RDS_SSLMODE_USER" },
+      { name = "Database__Host", value = "TERRAFORM_RDS_HOST_USER_DEFAULTDB" },
+      { name = "Database__Port", value = "TERRAFORM_RDS_PORT_USER_DEFAULTDB" },
+      { name = "Database__Name", value = "TERRAFORM_RDS_DB_USER_DEFAULTDB" },
+      { name = "Database__Username", value = "TERRAFORM_RDS_USERNAME_USER_DEFAULTDB" },
+      { name = "Database__Password", value = "TERRAFORM_RDS_PASSWORD_USER_DEFAULTDB" },
+      { name = "Database__Provider", value = "TERRAFORM_RDS_PROVIDER_USER_DEFAULTDB" },
+      { name = "Database__SslMode", value = "TERRAFORM_RDS_SSLMODE_USER_DEFAULTDB" },
       { name = "RabbitMq__Host", value = "rabbitmq" }, # ECS Service Connect DNS
       { name = "RabbitMq__Port", value = "5672" },
       { name = "RabbitMq__Username", value = "rabbitmq" },
@@ -65,7 +65,6 @@ services = {
       { name = "Cors__AllowedOrigins__0", value = "http://localhost:5173" },
       { name = "Cors__AllowedOrigins__1", value = "https://your-frontend.example.com" },
       { name = "Cors__AllowedOrigins__2", value = "http://localhost:2406" },
-      { name = "ConnectionStrings__DefaultConnection", value = "Host=TERRAFORM_RDS_HOST_USER;Port=TERRAFORM_RDS_PORT_USER;Database=TERRAFORM_RDS_DB_USER;Username=TERRAFORM_RDS_USERNAME_USER;Password=TERRAFORM_RDS_PASSWORD_USER;Ssl Mode=TERRAFORM_RDS_SSLMODE_USER;" }
     ]
 
     ecs_container_health_check = {

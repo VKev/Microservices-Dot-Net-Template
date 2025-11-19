@@ -67,9 +67,10 @@ variable "rds" {
   description = "Map of RDS instances to create (keyed, e.g., \"user\", \"guest\")."
   type = map(object({
     db_name                 = optional(string, "defaultdb")
+    db_names                = optional(list(string))
     username                = optional(string, "avnadmin")
     password                = optional(string, "")
-    engine_version          = optional(string, "15.5")
+    engine_version          = optional(string, "15.4")
     instance_class          = optional(string, "db.t3.micro")
     allocated_storage       = optional(number, 20)
     max_allocated_storage   = optional(number, 100)

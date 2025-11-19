@@ -3,7 +3,7 @@ module "rds" {
   for_each = local.rds_definitions
 
   project_name               = var.project_name
-  identifier                 = "${var.project_name}-${each.key}-db"
+  identifier                 = "${var.project_name}-${each.value.service}-${each.value.db_name}-db"
   db_name                    = each.value.db_name
   username                   = each.value.username
   password                   = each.value.password

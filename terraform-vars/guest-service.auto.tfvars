@@ -38,12 +38,12 @@ services = {
     ecs_environment_variables = [
       { name = "ASPNETCORE_ENVIRONMENT", value = "Production" },
       { name = "ASPNETCORE_URLS", value = "http://+:5001" },
-      { name = "Database__Host", value = "TERRAFORM_RDS_HOST_GUEST" },
-      { name = "Database__Port", value = "TERRAFORM_RDS_PORT_GUEST" },
-      { name = "Database__Name", value = "TERRAFORM_RDS_DB_GUEST" },
-      { name = "Database__Username", value = "TERRAFORM_RDS_USERNAME_GUEST" },
-      { name = "Database__Password", value = "TERRAFORM_RDS_PASSWORD_GUEST" },
-      { name = "Database__Provider", value = "TERRAFORM_RDS_PROVIDER_GUEST" },
+      { name = "Database__Host", value = "TERRAFORM_RDS_HOST_GUEST_DEFAULTDB" },
+      { name = "Database__Port", value = "TERRAFORM_RDS_PORT_GUEST_DEFAULTDB" },
+      { name = "Database__Name", value = "TERRAFORM_RDS_DB_GUEST_DEFAULTDB" },
+      { name = "Database__Username", value = "TERRAFORM_RDS_USERNAME_GUEST_DEFAULTDB" },
+      { name = "Database__Password", value = "TERRAFORM_RDS_PASSWORD_GUEST_DEFAULTDB" },
+      { name = "Database__Provider", value = "TERRAFORM_RDS_PROVIDER_GUEST_DEFAULTDB" },
       { name = "RabbitMq__Host", value = "rabbitmq" }, # ECS Service Connect DNS
       { name = "RabbitMq__Port", value = "5672" },
       { name = "RabbitMq__Username", value = "rabbitmq" },

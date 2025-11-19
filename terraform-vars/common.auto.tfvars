@@ -20,17 +20,17 @@ enable_service_connect = true
 # RDS instances to provision
 rds = {
   user = {
-    db_name           = "defaultdb"
+    db_names          = ["defaultdb", "n8ndb"]
     username          = "avnadmin"
-    engine_version    = "18.1"
+    engine_version    = "15.4"
     instance_class    = "db.t3.micro"
     password          = "0Kg04De04"
     allocated_storage = 5
   }
   guest = {
-    db_name           = "defaultdb"
+    db_names          = ["defaultdb"]
     username          = "avnadmin"
-    engine_version    = "18.1"
+    engine_version    = "15.4"
     instance_class    = "db.t3.micro"
     password          = "0Kg04De04"
     allocated_storage = 5
