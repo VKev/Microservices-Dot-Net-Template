@@ -56,46 +56,50 @@ resource "aws_s3_bucket_policy" "tf_state_cloudfront_logs" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "AllowCloudFrontServicePrincipalReadWrite"
-        Effect = "Allow"
-        Principal = {
-          Service = "cloudfront.amazonaws.com"
+    Statement = concat(
+      [
+        {
+          Sid    = "AllowCloudFrontServicePrincipalReadWrite"
+          Effect = "Allow"
+          Principal = {
+            Service = "cloudfront.amazonaws.com"
+          }
+          Action = [
+            "s3:GetBucketAcl",
+            "s3:PutBucketAcl",
+            "s3:PutObject",
+            "s3:PutObjectAcl"
+          ]
+          Resource = [
+            aws_s3_bucket.tf_state.arn,
+            "${aws_s3_bucket.tf_state.arn}/*"
+          ]
         }
-        Action = [
-          "s3:GetBucketAcl",
-          "s3:PutBucketAcl",
-          "s3:PutObject",
-          "s3:PutObjectAcl"
-        ]
-        Resource = [
-          aws_s3_bucket.tf_state.arn,
-          "${aws_s3_bucket.tf_state.arn}/*"
-        ]
-      },
-      {
-        Sid    = "AllowCloudFrontAccess"
-        Effect = "Allow"
-        Principal = {
-          Service = "cloudfront.amazonaws.com"
-        }
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:ListBucket"
-        ]
-        Resource = [
-          aws_s3_bucket.tf_state.arn,
-          "${aws_s3_bucket.tf_state.arn}/*"
-        ]
-        Condition = {
-          StringEquals = {
-            "AWS:SourceArn" = var.cloudfront_distribution_arn
+      ],
+      var.cloudfront_distribution_arn != null ? [
+        {
+          Sid    = "AllowCloudFrontAccess"
+          Effect = "Allow"
+          Principal = {
+            Service = "cloudfront.amazonaws.com"
+          }
+          Action = [
+            "s3:GetObject",
+            "s3:PutObject",
+            "s3:ListBucket"
+          ]
+          Resource = [
+            aws_s3_bucket.tf_state.arn,
+            "${aws_s3_bucket.tf_state.arn}/*"
+          ]
+          Condition = {
+            StringEquals = {
+              "AWS:SourceArn" = var.cloudfront_distribution_arn
+            }
           }
         }
-      }
-    ]
+      ] : []
+    )
   })
 }
 
