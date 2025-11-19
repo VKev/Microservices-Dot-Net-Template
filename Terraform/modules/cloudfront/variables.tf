@@ -129,7 +129,7 @@ variable "s3_origin_id" {
 }
 
 variable "s3_path_pattern" {
-  description = "Path pattern to route to S3 origin (e.g., /static/*)"
+  description = "Path pattern to route to S3 origin (e.g., /s3/*)"
   type        = string
-  default     = "/static/*"
+  default     = "/s3/*"
 }

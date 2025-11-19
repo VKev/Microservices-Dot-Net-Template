@@ -35,6 +35,25 @@ resource "aws_cloudfront_origin_access_control" "s3_oac" {
   signing_protocol                  = "sigv4"
 }
 
+resource "aws_cloudfront_function" "rewrite_uri" {
+  name    = "${var.project_name}-rewrite-static"
+  runtime = "cloudfront-js-1.0"
+  comment = "Rewrite /s3/* to /* for S3 origin"
+  publish = true
+  code    = <<EOF
+function handler(event) {
+    var request = event.request;
+    var uri = request.uri;
+    if (uri.startsWith('/s3/')) {
+        request.uri = uri.replace('/s3/', '/');
+    } else if (uri === '/s3') {
+        request.uri = '/';
+    }
+    return request;
+}
+EOF
+}
+
 resource "aws_cloudfront_distribution" "alb_distribution" {
   enabled             = true
   is_ipv6_enabled     = false # Disabled for MoMo compatibility (MoMo only supports IPv4)
@@ -92,7 +111,7 @@ resource "aws_cloudfront_distribution" "alb_distribution" {
       target_origin_id = var.s3_origin_id
 
       forwarded_values {
-        query_string = false
+        query_string = true
         cookies {
           forward = "none"
         }
@@ -103,6 +122,11 @@ resource "aws_cloudfront_distribution" "alb_distribution" {
       default_ttl            = 3600
       max_ttl                = 86400
       compress               = true
+
+      function_association {
+        event_type   = "viewer-request"
+        function_arn = aws_cloudfront_function.rewrite_uri.arn
+      }
     }
   }
 

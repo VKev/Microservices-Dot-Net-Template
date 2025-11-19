@@ -305,7 +305,7 @@ module "cloudfront" {
 
   # S3 Origin
   s3_bucket_domain_name = var.static_assets_bucket_domain_name
-  s3_path_pattern       = "/static/*"
+  s3_path_pattern       = "/s3/*"
 
   depends_on = [module.alb]
 }
