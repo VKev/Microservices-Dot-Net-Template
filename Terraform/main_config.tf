@@ -31,7 +31,7 @@ locals {
         publicly_accessible     = false
         port                    = 5432
         tags                    = {}
-      }, cfg)
+      }, omit(cfg, ["db_name", "db_names"]))
     }
   ]...)
 
