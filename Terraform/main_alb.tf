@@ -1,4 +1,4 @@
-﻿# ALB Module
+# ALB Module
 module "alb" {
   source            = "./modules/alb"
   project_name      = var.project_name

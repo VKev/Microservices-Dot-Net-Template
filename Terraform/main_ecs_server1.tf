@@ -1,4 +1,4 @@
-﻿# ECS Module - Server-1 (User microservice + RabbitMQ + Redis)
+# ECS Module - Server-1 (User microservice + RabbitMQ + Redis)
 module "ecs_server1" {
   source = "./modules/ecs"
 
@@ -64,8 +64,8 @@ module "ecs_server1" {
 
   service_definitions = {
     server-1 = {
-      task_cpu         = 640
-      task_memory      = 640
+      task_cpu         = 896
+      task_memory      = 1792
       desired_count    = 1
       assign_public_ip = false
       placement_constraints = [

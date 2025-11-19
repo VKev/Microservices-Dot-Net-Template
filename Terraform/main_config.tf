@@ -21,7 +21,7 @@ locals {
         for db in coalesce(try(cfg.db_names, null), [lookup(cfg, "db_name", "defaultdb")]) : merge({
           service = key
           db_name = db
-        }, {
+          }, {
           username                = "avnadmin"
           password                = ""
           engine_version          = "15.4"
@@ -42,8 +42,8 @@ locals {
   rds_lookup = {
     for key, m in module.rds :
     key => merge(local.rds_definitions[key], {
-      host = m.address
-      port = m.port
+      host     = m.address
+      port     = m.port
       username = m.username
       password = m.password
     })

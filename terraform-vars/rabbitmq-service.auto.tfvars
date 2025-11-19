@@ -23,8 +23,8 @@ services = {
     ecs_container_name_suffix          = "rabbitmq"
     ecs_container_image_repository_url = "936910352865.dkr.ecr.us-east-1.amazonaws.com/dockerhub/library/rabbitmq"
     ecs_container_image_tag            = "3-management"
-    ecs_container_cpu                  = 240
-    ecs_container_memory               = 240
+    ecs_container_cpu                  = 256
+    ecs_container_memory               = 640
     ecs_container_essential            = true
     ecs_container_port_mappings = [
       {

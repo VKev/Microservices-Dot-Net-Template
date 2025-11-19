@@ -1,4 +1,4 @@
-﻿# EC2 Module
+# EC2 Module
 module "ec2" {
   source                = "./modules/ec2"
   project_name          = var.project_name
@@ -24,11 +24,12 @@ module "ec2" {
     server-2 = {
       instance_attributes = { service_group = "server-2" }
       tags                = { ServiceGroup = "server-2" }
-      user_data_extra     = <<-EOF
-        mkdir -p /var/lib/${var.project_name}/n8n
-        chown 1000:1000 /var/lib/${var.project_name}/n8n || true
-        chmod 0775 /var/lib/${var.project_name}/n8n || chmod 0777 /var/lib/${var.project_name}/n8n
-      EOF
+      user_data_extra     = ""
+    }
+    server-3 = {
+      instance_attributes = { service_group = "server-3" }
+      tags                = { ServiceGroup = "server-3" }
+      user_data_extra     = ""
     }
   }
 
