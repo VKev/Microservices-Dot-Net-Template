@@ -32,8 +32,8 @@ services = {
     ecs_container_name_suffix          = "n8n"
     ecs_container_image_repository_url = "936910352865.dkr.ecr.us-east-1.amazonaws.com/dockerhub/n8nio/n8n"
     ecs_container_image_tag            = "latest"
-    ecs_container_cpu                  = 640
-    ecs_container_memory               = 1280
+    ecs_container_cpu                  = 512
+    ecs_container_memory               = 640
     ecs_container_essential            = true
     ecs_container_port_mappings = [
       {

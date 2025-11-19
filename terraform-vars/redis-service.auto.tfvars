@@ -24,7 +24,7 @@ services = {
     ecs_container_image_repository_url = "936910352865.dkr.ecr.us-east-1.amazonaws.com/dockerhub/library/redis"
     ecs_container_image_tag            = "alpine"
     ecs_container_cpu                  = 128
-    ecs_container_memory               = 256
+    ecs_container_memory               = 128
     ecs_container_essential            = true
     ecs_container_port_mappings = [
       {
