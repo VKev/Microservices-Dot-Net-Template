@@ -85,7 +85,7 @@ resource "aws_cloudfront_distribution" "alb_distribution" {
     for_each = var.s3_bucket_domain_name != "" ? [1] : []
     content {
       domain_name              = var.s3_bucket_domain_name
-      origin_access_control_id = aws_cloudfront_origin_access_control.s3_oac.id
+      origin_access_control_id = var.s3_use_oac ? aws_cloudfront_origin_access_control.s3_oac.id : null
       origin_id                = var.s3_origin_id
     }
   }

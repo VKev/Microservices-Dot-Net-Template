@@ -306,6 +306,7 @@ module "cloudfront" {
   # S3 Origin
   s3_bucket_domain_name = var.static_assets_bucket_domain_name
   s3_path_pattern       = "/s3/*"
+  s3_use_oac            = false # Disabled to allow S3 Presigned URLs
 
   depends_on = [module.alb]
 }
