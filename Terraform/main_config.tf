@@ -15,25 +15,39 @@ locals {
   # With CloudFront: 2 (CloudFront -> ALB -> Container)
   n8n_proxy_depth = var.use_cloudfront_https ? 2 : 1
 
-  rds_definitions = merge([
-    for service, cfg in var.rds : {
-      for db in toset(coalesce(try(cfg.db_names, null), [lookup(cfg, "db_name", "defaultdb")])) : "${service}-${db}" => merge({
-        service                 = service
-        db_name                 = db
-        username                = "avnadmin"
-        password                = ""
-        engine_version          = "15.4"
-        instance_class          = "db.t3.micro"
-        allocated_storage       = 20
-        max_allocated_storage   = 100
-        backup_retention_period = 1
-        deletion_protection     = false
-        publicly_accessible     = false
-        port                    = 5432
-        tags                    = {}
-      }, omit(cfg, ["db_name", "db_names"]))
-    }
-  ]...)
+  rds_config_defaults = {
+    username                = "avnadmin"
+    password                = ""
+    engine_version          = "15.4"
+    instance_class          = "db.t3.micro"
+    allocated_storage       = 20
+    max_allocated_storage   = 100
+    backup_retention_period = 1
+    deletion_protection     = false
+    publicly_accessible     = false
+    port                    = 5432
+    tags                    = {}
+  }
+
+  rds_definitions = {
+    for service, cfg in var.rds :
+    service => merge(
+      local.rds_config_defaults,
+      {
+        service  = service
+        db_name  = coalesce(
+          lookup(cfg, "db_name", null),
+          try(distinct(coalescelist(try(cfg.db_names, null), [lookup(cfg, "db_name", "defaultdb")]))[0], null),
+          "defaultdb"
+        )
+        db_names = distinct(coalescelist(try(cfg.db_names, null), [lookup(cfg, "db_name", "defaultdb")]))
+      },
+      {
+        for key, value in cfg :
+        key => value if key != "db_names"
+      }
+    )
+  }
 
   rds_lookup = {
     for key, m in module.rds :
@@ -45,28 +59,32 @@ locals {
     })
   }
 
-  rds_placeholder_map = merge([
-    for key, rds in local.rds_lookup : {
-      # Base keys per service (first DB used when multiple)
-      "TERRAFORM_RDS_HOST_${upper(rds.service)}"       = rds.host
-      "TERRAFORM_RDS_PORT_${upper(rds.service)}"       = tostring(rds.port)
-      "TERRAFORM_RDS_DB_${upper(rds.service)}"         = rds.db_name
-      "TERRAFORM_RDS_USERNAME_${upper(rds.service)}"   = rds.username
-      "TERRAFORM_RDS_PASSWORD_${upper(rds.service)}"   = rds.password
-      "TERRAFORM_RDS_PROVIDER_${upper(rds.service)}"   = "postgres"
-      "TERRAFORM_RDS_SSLMODE_${upper(rds.service)}"    = "Require"
-      "TERRAFORM_RDS_CONNECTION_${upper(rds.service)}" = "Host=${rds.host};Port=${rds.port};Database=${rds.db_name};Username=${rds.username};Password=${rds.password};Ssl Mode=Require;"
-
-      # Keys per service+db combination
-      "TERRAFORM_RDS_HOST_${upper(rds.service)}_${upper(rds.db_name)}"       = rds.host
-      "TERRAFORM_RDS_PORT_${upper(rds.service)}_${upper(rds.db_name)}"       = tostring(rds.port)
-      "TERRAFORM_RDS_DB_${upper(rds.service)}_${upper(rds.db_name)}"         = rds.db_name
-      "TERRAFORM_RDS_USERNAME_${upper(rds.service)}_${upper(rds.db_name)}"   = rds.username
-      "TERRAFORM_RDS_PASSWORD_${upper(rds.service)}_${upper(rds.db_name)}"   = rds.password
-      "TERRAFORM_RDS_PROVIDER_${upper(rds.service)}_${upper(rds.db_name)}"   = "postgres"
-      "TERRAFORM_RDS_SSLMODE_${upper(rds.service)}_${upper(rds.db_name)}"    = "Require"
-      "TERRAFORM_RDS_CONNECTION_${upper(rds.service)}_${upper(rds.db_name)}" = "Host=${rds.host};Port=${rds.port};Database=${rds.db_name};Username=${rds.username};Password=${rds.password};Ssl Mode=Require;"
-    }
+  rds_placeholder_map = length(local.rds_lookup) == 0 ? {} : merge([
+    for key, rds in local.rds_lookup : merge(
+      {
+        # Base keys per service use the primary DB (rds.db_name)
+        "TERRAFORM_RDS_HOST_${upper(rds.service)}"       = rds.host
+        "TERRAFORM_RDS_PORT_${upper(rds.service)}"       = tostring(rds.port)
+        "TERRAFORM_RDS_DB_${upper(rds.service)}"         = rds.db_name
+        "TERRAFORM_RDS_USERNAME_${upper(rds.service)}"   = rds.username
+        "TERRAFORM_RDS_PASSWORD_${upper(rds.service)}"   = rds.password
+        "TERRAFORM_RDS_PROVIDER_${upper(rds.service)}"   = "postgres"
+        "TERRAFORM_RDS_SSLMODE_${upper(rds.service)}"    = "Require"
+        "TERRAFORM_RDS_CONNECTION_${upper(rds.service)}" = "Host=${rds.host};Port=${rds.port};Database=${rds.db_name};Username=${rds.username};Password=${rds.password};Ssl Mode=Require;"
+      },
+      merge([
+        for db in (length(rds.db_names) > 0 ? rds.db_names : [rds.db_name]) : {
+          "TERRAFORM_RDS_HOST_${upper(rds.service)}_${upper(db)}"       = rds.host
+          "TERRAFORM_RDS_PORT_${upper(rds.service)}_${upper(db)}"       = tostring(rds.port)
+          "TERRAFORM_RDS_DB_${upper(rds.service)}_${upper(db)}"         = db
+          "TERRAFORM_RDS_USERNAME_${upper(rds.service)}_${upper(db)}"   = rds.username
+          "TERRAFORM_RDS_PASSWORD_${upper(rds.service)}_${upper(db)}"   = rds.password
+          "TERRAFORM_RDS_PROVIDER_${upper(rds.service)}_${upper(db)}"   = "postgres"
+          "TERRAFORM_RDS_SSLMODE_${upper(rds.service)}_${upper(db)}"    = "Require"
+          "TERRAFORM_RDS_CONNECTION_${upper(rds.service)}_${upper(db)}" = "Host=${rds.host};Port=${rds.port};Database=${db};Username=${rds.username};Password=${rds.password};Ssl Mode=Require;"
+        }
+      ]...)
+    )
   ]...)
 }
 
