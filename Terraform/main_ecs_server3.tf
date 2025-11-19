@@ -44,8 +44,8 @@ module "ecs_server3" {
 
   service_definitions = {
     server-3 = {
-      task_cpu         = var.services["n8n"].ecs_container_cpu + 64 + 192
-      task_memory      = var.services["n8n"].ecs_container_memory + 128 + 256
+      task_cpu = var.services["n8n"].ecs_container_cpu + 64
+      task_memory = var.services["n8n"].ecs_container_memory + 64
       desired_count    = 1
       assign_public_ip = false
       placement_constraints = [
