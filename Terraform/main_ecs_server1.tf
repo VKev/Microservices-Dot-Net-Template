@@ -1,4 +1,4 @@
-# ECS Module - Server-1 (User microservice + RabbitMQ + Redis)
+# ECS Module - Server-1 Split (User+RabbitMQ and Redis as separate tasks)
 module "ecs_server1" {
   source = "./modules/ecs"
 
@@ -12,7 +12,7 @@ module "ecs_server1" {
   alb_security_group_id    = module.alb.alb_sg_id
   assign_public_ip         = true
   desired_count            = 1
-  service_names            = ["server-1"]
+  service_names            = ["server-1a", "server-1b"]
   service_discovery_domain = "${var.project_name}.${var.service_discovery_domain_suffix}"
   service_dependencies     = {}
   enable_auto_scaling      = var.enable_auto_scaling
@@ -27,7 +27,7 @@ module "ecs_server1" {
   service_connect_namespace = var.enable_service_connect ? aws_service_discovery_private_dns_namespace.ecs_namespace[0].arn : null
 
   service_connect_services = {
-    server-1 = [
+    server-1a = [
       {
         port_name      = var.services["user"].ecs_service_connect_port_name
         discovery_name = var.services["user"].ecs_service_connect_discovery_name
@@ -47,7 +47,9 @@ module "ecs_server1" {
             port     = var.services["rabbitmq"].ecs_container_port_mappings[0].container_port
           }
         ]
-      },
+      }
+    ]
+    server-1b = [
       {
         port_name      = var.services["redis"].ecs_service_connect_port_name
         discovery_name = var.services["redis"].ecs_service_connect_discovery_name
@@ -58,21 +60,18 @@ module "ecs_server1" {
           }
         ]
       }
-      # Note: API Gateway and Guest services auto-discovered via Service Connect namespace
     ]
   }
 
   service_definitions = {
-    server-1 = {
+    server-1a = {
       task_cpu = (
         var.services["rabbitmq"].ecs_container_cpu +
-        var.services["redis"].ecs_container_cpu +
         var.services["user"].ecs_container_cpu +
         128
       )
       task_memory = (
         var.services["rabbitmq"].ecs_container_memory +
-        var.services["redis"].ecs_container_memory +
         var.services["user"].ecs_container_memory +
         128
       )
@@ -89,10 +88,6 @@ module "ecs_server1" {
         {
           name      = "rabbitmq-data"
           host_path = "/var/lib/${var.project_name}/rabbitmq"
-        },
-        {
-          name      = "redis-data"
-          host_path = "/var/lib/${var.project_name}/redis"
         }
       ]
 
@@ -123,33 +118,7 @@ module "ecs_server1" {
           depends_on = []
         },
         {
-          # Redis - deployed first as dependency
-          name                  = "redis"
-          image_repository_url  = var.services["redis"].ecs_container_image_repository_url
-          image_tag             = var.services["redis"].ecs_container_image_tag
-          cpu                   = var.services["redis"].ecs_container_cpu
-          memory                = var.services["redis"].ecs_container_memory
-          essential             = var.services["redis"].ecs_container_essential
-          port_mappings         = var.services["redis"].ecs_container_port_mappings
-          environment_variables = var.services["redis"].ecs_environment_variables
-          command               = lookup(var.services["redis"], "command", null)
-          health_check = {
-            command     = var.services["redis"].ecs_container_health_check.command
-            interval    = var.services["redis"].ecs_container_health_check.interval
-            timeout     = var.services["redis"].ecs_container_health_check.timeout
-            retries     = var.services["redis"].ecs_container_health_check.retries
-            startPeriod = var.services["redis"].ecs_container_health_check.startPeriod
-          }
-          mount_points = [
-            {
-              source_volume  = "redis-data"
-              container_path = "/data"
-            }
-          ]
-          depends_on = []
-        },
-        {
-          # User microservice - depends on RabbitMQ and Redis
+          # User microservice - depends on RabbitMQ
           name                 = "user-microservice"
           image_repository_url = var.services["user"].ecs_container_image_repository_url
           image_tag            = var.services["user"].ecs_container_image_tag
@@ -174,7 +143,64 @@ module "ecs_server1" {
             retries     = var.services["user"].ecs_container_health_check.retries
             startPeriod = var.services["user"].ecs_container_health_check.startPeriod
           }
-          depends_on = ["rabbitmq", "redis"]
+          depends_on = ["rabbitmq"]
+        }
+      ]
+
+      target_groups = []
+    }
+
+    server-1b = {
+      task_cpu = (
+        var.services["redis"].ecs_container_cpu +
+        128
+      )
+      task_memory = (
+        var.services["redis"].ecs_container_memory +
+        128
+      )
+      desired_count    = 1
+      assign_public_ip = false
+      placement_constraints = [
+        {
+          type       = "memberOf"
+          expression = "attribute:service_group == server-1"
+        }
+      ]
+
+      volumes = [
+        {
+          name      = "redis-data"
+          host_path = "/var/lib/${var.project_name}/redis"
+        }
+      ]
+
+      containers = [
+        {
+          # Redis
+          name                  = "redis"
+          image_repository_url  = var.services["redis"].ecs_container_image_repository_url
+          image_tag             = var.services["redis"].ecs_container_image_tag
+          cpu                   = var.services["redis"].ecs_container_cpu
+          memory                = var.services["redis"].ecs_container_memory
+          essential             = var.services["redis"].ecs_container_essential
+          port_mappings         = var.services["redis"].ecs_container_port_mappings
+          environment_variables = var.services["redis"].ecs_environment_variables
+          command               = lookup(var.services["redis"], "command", null)
+          health_check = {
+            command     = var.services["redis"].ecs_container_health_check.command
+            interval    = var.services["redis"].ecs_container_health_check.interval
+            timeout     = var.services["redis"].ecs_container_health_check.timeout
+            retries     = var.services["redis"].ecs_container_health_check.retries
+            startPeriod = var.services["redis"].ecs_container_health_check.startPeriod
+          }
+          mount_points = [
+            {
+              source_volume  = "redis-data"
+              container_path = "/data"
+            }
+          ]
+          depends_on = []
         }
       ]
 
@@ -184,4 +210,3 @@ module "ecs_server1" {
 
   depends_on = [module.ec2]
 }
-
