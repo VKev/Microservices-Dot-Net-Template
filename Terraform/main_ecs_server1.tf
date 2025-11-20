@@ -68,12 +68,12 @@ module "ecs_server1" {
       task_cpu = (
         var.services["rabbitmq"].ecs_container_cpu +
         var.services["user"].ecs_container_cpu +
-        128
+        64
       )
       task_memory = (
         var.services["rabbitmq"].ecs_container_memory +
         var.services["user"].ecs_container_memory +
-        128
+        64
       )
       desired_count    = 1
       assign_public_ip = false
@@ -151,14 +151,8 @@ module "ecs_server1" {
     }
 
     server-1b = {
-      task_cpu = (
-        var.services["redis"].ecs_container_cpu +
-        128
-      )
-      task_memory = (
-        var.services["redis"].ecs_container_memory +
-        128
-      )
+      task_cpu         = (var.services["redis"].ecs_container_cpu + 64)
+      task_memory      = (var.services["redis"].ecs_container_memory + 64)
       desired_count    = 1
       assign_public_ip = false
       placement_constraints = [
