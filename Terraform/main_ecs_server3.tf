@@ -180,7 +180,5 @@ EOT
         }
       ]
     }
-  }
-
-depends_on = [for m in module.ec2 : m]
+}
 }

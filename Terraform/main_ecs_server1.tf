@@ -181,8 +181,6 @@ module "ecs_server1" {
 
       target_groups = []
     }
-  }
-
-depends_on = [for m in module.ec2 : m]
+}
 }
 

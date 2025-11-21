@@ -145,6 +145,5 @@ module "ecs_server2" {
     }
   }
 
-  depends_on = [for m in module.ecs_server1 : m]
 }
 
