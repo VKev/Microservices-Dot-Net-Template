@@ -22,6 +22,7 @@ module "ecs_server2" {
   enable_auto_scaling    = var.enable_auto_scaling
   enable_service_connect = var.enable_service_connect
   wait_for_steady_state  = true
+  depends_on             = [module.ecs_server1, module.ecs_server3]
 
   # Pass shared resources (same as server-1)
   shared_log_group_name     = aws_cloudwatch_log_group.ecs_logs.name
