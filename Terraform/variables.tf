@@ -146,6 +146,35 @@ variable "use_eks" {
   default     = false
 }
 
+variable "kubernete" {
+  description = "Kubernetes deployment settings (used when use_eks = true)."
+  type = object({
+    namespace         = string
+    redis_password    = string
+    rabbitmq_username = string
+    rabbitmq_password = string
+    jwt_secret        = string
+    guest_db = object({
+      host     = string
+      port     = number
+      name     = string
+      username = string
+      password = string
+      provider = string
+    })
+    user_db = object({
+      host     = string
+      port     = number
+      name     = string
+      username = string
+      password = string
+      provider = string
+      ssl_mode = string
+    })
+  })
+
+}
+
 variable "cloudfront_enable_caching" {
   description = "Whether to enable CloudFront caching. Set to false to pass all requests directly to ALB without caching."
   type        = bool
