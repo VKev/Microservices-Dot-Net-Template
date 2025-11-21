@@ -65,42 +65,42 @@ output "vpc_cidr_block" {
 # EC2 Outputs
 output "ec2_instance_ids" {
   description = "Map of ECS container instance IDs keyed by group name"
-  value       = var.use_eks ? {} : module.ec2[0].instance_ids
+  value       = try(module.ec2[0].instance_ids, {})
 }
 
 output "ec2_public_ips" {
   description = "Map of public IP addresses for ECS container instances"
-  value       = var.use_eks ? {} : module.ec2[0].instance_public_ips
+  value       = try(module.ec2[0].instance_public_ips, {})
 }
 
 output "ec2_private_ips" {
   description = "Map of private IP addresses for ECS container instances"
-  value       = var.use_eks ? {} : module.ec2[0].instance_private_ips
+  value       = try(module.ec2[0].instance_private_ips, {})
 }
 
 output "ec2_public_dns" {
   description = "Map of public DNS names for ECS container instances"
-  value       = var.use_eks ? {} : module.ec2[0].instance_public_dns
+  value       = try(module.ec2[0].instance_public_dns, {})
 }
 
 output "ec2_elastic_ips" {
   description = "Map of Elastic IPs attached to ECS container instances"
-  value       = var.use_eks ? {} : module.ec2[0].elastic_ips
+  value       = try(module.ec2[0].elastic_ips, {})
 }
 
 output "ecs_cluster_name" {
   description = "Name of the ECS cluster"
-  value       = var.use_eks ? null : module.ec2[0].ecs_cluster_name
+  value       = try(module.ec2[0].ecs_cluster_name, null)
 }
 
 output "ecs_cluster_arn" {
   description = "ARN of the ECS cluster"
-  value       = var.use_eks ? null : module.ec2[0].ecs_cluster_arn
+  value       = try(module.ec2[0].ecs_cluster_arn, null)
 }
 
 output "ec2_private_key_pem" {
   description = "Private key for EC2 instance."
-  value       = var.use_eks ? null : module.ec2[0].ec2_private_key_pem
+  value       = try(module.ec2[0].ec2_private_key_pem, null)
   sensitive   = true
 }
 

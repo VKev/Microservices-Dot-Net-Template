@@ -8,8 +8,8 @@ module "ecs_server1" {
   vpc_id                   = module.vpc.vpc_id
   vpc_cidr                 = var.vpc_cidr
   task_subnet_ids          = module.vpc.public_subnet_ids
-  ecs_cluster_id           = module.ec2[0].ecs_cluster_arn
-  ecs_cluster_name         = module.ec2[0].ecs_cluster_name
+  ecs_cluster_id           = try(module.ec2[0].ecs_cluster_arn, null)
+  ecs_cluster_name         = try(module.ec2[0].ecs_cluster_name, null)
   alb_security_group_id    = module.alb.alb_sg_id
   assign_public_ip         = true
   desired_count            = 1
@@ -183,6 +183,6 @@ module "ecs_server1" {
     }
   }
 
-depends_on = var.use_eks ? [] : [module.ec2[0]]
+depends_on = var.use_eks ? [] : module.ec2
 }
 
