@@ -145,6 +145,6 @@ module "ecs_server2" {
     }
   }
 
-  depends_on = var.use_eks ? [] : module.ecs_server1
+  depends_on = var.use_eks ? [] : [module.ecs_server1[0]]
 }
 

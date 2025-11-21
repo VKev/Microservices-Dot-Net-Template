@@ -182,5 +182,5 @@ EOT
     }
   }
 
-depends_on = var.use_eks ? [] : module.ec2
+depends_on = var.use_eks ? [] : [module.ec2[0]]
 }
