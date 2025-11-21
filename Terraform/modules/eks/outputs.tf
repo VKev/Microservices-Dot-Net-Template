@@ -8,6 +8,11 @@ output "cluster_endpoint" {
   value       = aws_eks_cluster.this.endpoint
 }
 
+output "cluster_certificate_authority_data" {
+  description = "Base64 encoded certificate data required to communicate with the cluster."
+  value       = aws_eks_cluster.this.certificate_authority[0].data
+}
+
 output "cluster_security_group_id" {
   description = "Security group for the cluster."
   value       = aws_security_group.eks_cluster.id

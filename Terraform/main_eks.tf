@@ -18,11 +18,13 @@ module "eks" {
   node_max_size      = 4
 }
 
-data "aws_eks_cluster" "eks" {
-  count = local.eks_enabled ? 1 : 0
-  name  = module.eks[0].cluster_name
+# Local variables to simplify Kubernetes provider configuration
+locals {
+  cluster_endpoint = local.eks_enabled ? module.eks[0].cluster_endpoint : null
+  cluster_ca_cert  = local.eks_enabled ? base64decode(module.eks[0].cluster_certificate_authority_data) : null
 }
 
+# Data source for authentication token
 data "aws_eks_cluster_auth" "eks" {
   count = local.eks_enabled ? 1 : 0
   name  = module.eks[0].cluster_name
@@ -30,8 +32,8 @@ data "aws_eks_cluster_auth" "eks" {
 
 provider "kubernetes" {
   alias                  = "eks"
-  host                   = local.eks_enabled ? data.aws_eks_cluster.eks[0].endpoint : null
-  cluster_ca_certificate = local.eks_enabled ? base64decode(data.aws_eks_cluster.eks[0].certificate_authority[0].data) : null
+  host                   = local.cluster_endpoint
+  cluster_ca_certificate = local.cluster_ca_cert
   token                  = local.eks_enabled ? data.aws_eks_cluster_auth.eks[0].token : null
 }
 
