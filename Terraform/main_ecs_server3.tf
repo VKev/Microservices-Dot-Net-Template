@@ -182,5 +182,5 @@ EOT
     }
   }
 
-depends_on = module.ec2
+depends_on = [for m in module.ec2 : m]
 }
