@@ -1,5 +1,6 @@
 # ECS Module - Server-3 (n8n automation + reverse proxy)
 module "ecs_server3" {
+  count  = var.use_eks ? 0 : 1
   source = "./modules/ecs"
 
   project_name             = var.project_name
@@ -7,8 +8,8 @@ module "ecs_server3" {
   vpc_id                   = module.vpc.vpc_id
   vpc_cidr                 = var.vpc_cidr
   task_subnet_ids          = module.vpc.public_subnet_ids
-  ecs_cluster_id           = module.ec2.ecs_cluster_arn
-  ecs_cluster_name         = module.ec2.ecs_cluster_name
+  ecs_cluster_id           = module.ec2[0].ecs_cluster_arn
+  ecs_cluster_name         = module.ec2[0].ecs_cluster_name
   alb_security_group_id    = module.alb.alb_sg_id
   assign_public_ip         = true
   desired_count            = 1
@@ -181,5 +182,5 @@ EOT
     }
   }
 
-  depends_on = [module.ec2]
+depends_on = var.use_eks ? [] : [module.ec2[0]]
 }

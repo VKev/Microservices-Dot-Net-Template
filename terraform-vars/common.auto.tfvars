@@ -14,6 +14,7 @@ associate_public_ip = true
 
 # ECS Global Settings
 enable_auto_scaling = false
+use_eks             = true
 
 enable_service_connect = true
 

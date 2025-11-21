@@ -140,6 +140,12 @@ variable "use_cloudfront_https" {
   default     = true
 }
 
+variable "use_eks" {
+  description = "When true, deploy workloads to EKS instead of ECS."
+  type        = bool
+  default     = false
+}
+
 variable "cloudfront_enable_caching" {
   description = "Whether to enable CloudFront caching. Set to false to pass all requests directly to ALB without caching."
   type        = bool

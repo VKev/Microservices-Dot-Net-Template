@@ -1,5 +1,6 @@
 # EC2 Module
 module "ec2" {
+  count                 = var.use_eks ? 0 : 1
   source                = "./modules/ec2"
   project_name          = var.project_name
   vpc_id                = module.vpc.vpc_id
@@ -35,4 +36,3 @@ module "ec2" {
 
   depends_on = [module.alb]
 }
-
