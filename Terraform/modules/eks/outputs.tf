@@ -22,3 +22,8 @@ output "node_group_name" {
   description = "Managed node group name."
   value       = aws_eks_node_group.default.node_group_name
 }
+
+output "node_role_arn" {
+  description = "IAM role ARN used by the worker nodes."
+  value       = aws_iam_role.eks_node.arn
+}

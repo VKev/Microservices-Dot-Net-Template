@@ -37,6 +37,31 @@ provider "kubernetes" {
   token                  = local.eks_enabled ? data.aws_eks_cluster_auth.eks[0].token : null
 }
 
+resource "kubernetes_config_map" "aws_auth" {
+  count    = local.eks_enabled ? 1 : 0
+  provider = kubernetes.eks
+
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
+
+  data = {
+    mapRoles = yamlencode([
+      {
+        rolearn  = module.eks[0].node_role_arn
+        username = "system:node:{{EC2PrivateDNSName}}"
+        groups = [
+          "system:bootstrappers",
+          "system:nodes",
+        ]
+      }
+    ])
+  }
+
+  depends_on = [module.eks]
+}
+
 resource "kubernetes_namespace" "microservices" {
   count    = local.eks_enabled ? 1 : 0
   provider = kubernetes.eks
