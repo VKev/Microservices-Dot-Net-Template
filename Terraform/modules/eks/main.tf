@@ -47,6 +47,10 @@ resource "aws_eks_cluster" "this" {
 
   version = var.cluster_version
 
+  access_config {
+    authentication_mode = "API_AND_CONFIG_MAP"
+  }
+
   vpc_config {
     security_group_ids      = [aws_security_group.eks_cluster.id]
     subnet_ids              = concat(var.private_subnet_ids, var.public_subnet_ids)
