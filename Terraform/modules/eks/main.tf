@@ -1,4 +1,5 @@
 data "aws_partition" "current" {}
+data "aws_caller_identity" "current" {}
 
 locals {
   cluster_name = "${var.project_name}-eks"
@@ -161,4 +162,24 @@ resource "aws_eks_addon" "ebs_csi" {
     aws_eks_cluster.this,
     aws_iam_role_policy_attachment.ebs_csi,
   ]
+}
+
+# Grant the caller of Terraform admin access to the cluster so the Kubernetes provider can create resources
+resource "aws_eks_access_entry" "terraform_admin" {
+  cluster_name = aws_eks_cluster.this.name
+  principal_arn = data.aws_caller_identity.current.arn
+  type = "STANDARD"
+
+  depends_on = [aws_eks_cluster.this]
+}
+
+resource "aws_eks_access_policy_association" "terraform_admin" {
+  cluster_name = aws_eks_cluster.this.name
+  principal_arn = data.aws_caller_identity.current.arn
+  policy_arn = "arn:${data.aws_partition.current.partition}:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.terraform_admin]
 }
