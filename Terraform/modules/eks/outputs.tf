@@ -27,3 +27,13 @@ output "node_role_arn" {
   description = "IAM role ARN used by the worker nodes."
   value       = aws_iam_role.eks_node.arn
 }
+
+output "admin_access_entry_arn" {
+  description = "Access entry granting cluster admin to the Terraform principal."
+  value       = aws_eks_access_entry.terraform_admin.arn
+}
+
+output "admin_access_policy_association_arn" {
+  description = "Access policy association for Terraform principal."
+  value       = aws_eks_access_policy_association.terraform_admin.id
+}

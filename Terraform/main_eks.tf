@@ -43,6 +43,8 @@ resource "kubernetes_namespace" "microservices" {
   metadata {
     name = var.kubernete.namespace
   }
+
+  depends_on = [module.eks[0].admin_access_policy_association_arn]
 }
 
 resource "kubernetes_storage_class" "gp3" {
@@ -65,7 +67,7 @@ resource "kubernetes_storage_class" "gp3" {
     type = "gp3"
   }
 
-  depends_on = [module.eks]
+  depends_on = [module.eks[0].admin_access_policy_association_arn]
 }
 
 resource "kubernetes_secret" "redis_auth" {
