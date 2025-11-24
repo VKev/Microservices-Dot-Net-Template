@@ -37,31 +37,6 @@ provider "kubernetes" {
   token                  = local.eks_enabled ? data.aws_eks_cluster_auth.eks[0].token : null
 }
 
-resource "kubernetes_config_map" "aws_auth" {
-  count    = local.eks_enabled ? 1 : 0
-  provider = kubernetes.eks
-
-  metadata {
-    name      = "aws-auth"
-    namespace = "kube-system"
-  }
-
-  data = {
-    mapRoles = yamlencode([
-      {
-        rolearn  = module.eks[0].node_role_arn
-        username = "system:node:{{EC2PrivateDNSName}}"
-        groups = [
-          "system:bootstrappers",
-          "system:nodes",
-        ]
-      }
-    ])
-  }
-
-  depends_on = [module.eks]
-}
-
 resource "kubernetes_namespace" "microservices" {
   count    = local.eks_enabled ? 1 : 0
   provider = kubernetes.eks
@@ -80,6 +55,8 @@ resource "kubernetes_secret" "redis_auth" {
   data = {
     redis-password = var.kubernete.redis_password
   }
+
+  depends_on = [kubernetes_namespace.microservices]
 }
 
 resource "kubernetes_secret" "rabbitmq_auth" {
@@ -93,6 +70,8 @@ resource "kubernetes_secret" "rabbitmq_auth" {
     rabbitmq-username = var.kubernete.rabbitmq_username
     rabbitmq-password = var.kubernete.rabbitmq_password
   }
+
+  depends_on = [kubernetes_namespace.microservices]
 }
 
 resource "kubernetes_persistent_volume_claim" "redis_data" {
@@ -110,6 +89,8 @@ resource "kubernetes_persistent_volume_claim" "redis_data" {
       }
     }
   }
+
+  depends_on = [kubernetes_namespace.microservices]
 }
 
 resource "kubernetes_persistent_volume_claim" "rabbitmq_data" {
@@ -127,6 +108,8 @@ resource "kubernetes_persistent_volume_claim" "rabbitmq_data" {
       }
     }
   }
+
+  depends_on = [kubernetes_namespace.microservices]
 }
 
 resource "kubernetes_persistent_volume_claim" "n8n_data" {
@@ -144,6 +127,8 @@ resource "kubernetes_persistent_volume_claim" "n8n_data" {
       }
     }
   }
+
+  depends_on = [kubernetes_namespace.microservices]
 }
 
 resource "kubernetes_deployment" "redis" {
@@ -202,6 +187,12 @@ resource "kubernetes_deployment" "redis" {
       }
     }
   }
+
+  depends_on = [
+    kubernetes_namespace.microservices,
+    kubernetes_secret.redis_auth,
+    kubernetes_persistent_volume_claim.redis_data,
+  ]
 }
 
 resource "kubernetes_service" "redis" {
@@ -220,6 +211,11 @@ resource "kubernetes_service" "redis" {
     }
     type = "ClusterIP"
   }
+
+  depends_on = [
+    kubernetes_namespace.microservices,
+    kubernetes_deployment.redis,
+  ]
 }
 
 resource "kubernetes_deployment" "rabbitmq" {
@@ -300,6 +296,12 @@ resource "kubernetes_deployment" "rabbitmq" {
       }
     }
   }
+
+  depends_on = [
+    kubernetes_namespace.microservices,
+    kubernetes_secret.rabbitmq_auth,
+    kubernetes_persistent_volume_claim.rabbitmq_data,
+  ]
 }
 
 resource "kubernetes_service" "rabbitmq" {
@@ -324,6 +326,11 @@ resource "kubernetes_service" "rabbitmq" {
     }
     type = "ClusterIP"
   }
+
+  depends_on = [
+    kubernetes_namespace.microservices,
+    kubernetes_deployment.rabbitmq,
+  ]
 }
 
 resource "kubernetes_deployment" "n8n" {
@@ -446,6 +453,11 @@ resource "kubernetes_deployment" "n8n" {
       }
     }
   }
+
+  depends_on = [
+    kubernetes_namespace.microservices,
+    kubernetes_persistent_volume_claim.n8n_data,
+  ]
 }
 
 resource "kubernetes_deployment" "n8n_proxy" {
@@ -485,6 +497,12 @@ resource "kubernetes_deployment" "n8n_proxy" {
       }
     }
   }
+
+  depends_on = [
+    kubernetes_namespace.microservices,
+    kubernetes_deployment.n8n,
+    kubernetes_config_map.n8n_nginx_conf,
+  ]
 }
 
 resource "kubernetes_config_map" "n8n_nginx_conf" {
@@ -550,6 +568,8 @@ http {
 }
 EOF
   }
+
+  depends_on = [kubernetes_namespace.microservices]
 }
 
 resource "kubernetes_service" "n8n_proxy" {
@@ -568,6 +588,11 @@ resource "kubernetes_service" "n8n_proxy" {
     }
     type = "LoadBalancer"
   }
+
+  depends_on = [
+    kubernetes_namespace.microservices,
+    kubernetes_deployment.n8n_proxy,
+  ]
 }
 
 resource "kubernetes_deployment" "guest" {
@@ -679,6 +704,12 @@ resource "kubernetes_deployment" "guest" {
       }
     }
   }
+
+  depends_on = [
+    kubernetes_namespace.microservices,
+    kubernetes_deployment.rabbitmq,
+    kubernetes_deployment.redis,
+  ]
 }
 
 resource "kubernetes_service" "guest" {
@@ -697,6 +728,11 @@ resource "kubernetes_service" "guest" {
     }
     type = "ClusterIP"
   }
+
+  depends_on = [
+    kubernetes_namespace.microservices,
+    kubernetes_deployment.guest,
+  ]
 }
 
 resource "kubernetes_deployment" "user" {
@@ -824,6 +860,12 @@ resource "kubernetes_deployment" "user" {
       }
     }
   }
+
+  depends_on = [
+    kubernetes_namespace.microservices,
+    kubernetes_deployment.rabbitmq,
+    kubernetes_deployment.redis,
+  ]
 }
 
 resource "kubernetes_service" "user" {
@@ -842,6 +884,11 @@ resource "kubernetes_service" "user" {
     }
     type = "ClusterIP"
   }
+
+  depends_on = [
+    kubernetes_namespace.microservices,
+    kubernetes_deployment.user,
+  ]
 }
 
 resource "kubernetes_deployment" "api_gateway" {
@@ -917,6 +964,12 @@ resource "kubernetes_deployment" "api_gateway" {
       }
     }
   }
+
+  depends_on = [
+    kubernetes_namespace.microservices,
+    kubernetes_deployment.user,
+    kubernetes_deployment.guest,
+  ]
 }
 
 resource "kubernetes_service" "api_gateway" {
@@ -935,4 +988,9 @@ resource "kubernetes_service" "api_gateway" {
     }
     type = "LoadBalancer"
   }
+
+  depends_on = [
+    kubernetes_namespace.microservices,
+    kubernetes_deployment.api_gateway,
+  ]
 }
