@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: microservices
+  name: ${namespace}
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: redis-auth
-  namespace: microservices
+  namespace: ${namespace}
 type: Opaque
 stringData:
   redis-password: "0Kg04Rs05!"
@@ -16,7 +16,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: redis-data
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   accessModes:
     - ReadWriteOnce
@@ -28,7 +28,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   replicas: 1
   selector:
@@ -94,7 +94,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: rabbitmq-auth
-  namespace: microservices
+  namespace: ${namespace}
 type: Opaque
 stringData:
   rabbitmq-username: "rabbitmq"
@@ -104,7 +104,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: rabbitmq-data
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   accessModes:
     - ReadWriteOnce
@@ -116,7 +116,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rabbit-mq
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   replicas: 1
   selector:
@@ -184,7 +184,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: rabbit-mq
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   type: NodePort
   selector:
@@ -203,7 +203,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: n8n-data
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   accessModes:
     - ReadWriteOnce
@@ -215,7 +215,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: n8n
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   replicas: 1
   selector:
@@ -310,7 +310,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: n8n-nginx-conf
-  namespace: microservices
+  namespace: ${namespace}
 data:
   nginx.conf: |
     user  nginx;
@@ -370,7 +370,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: n8n-proxy
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   replicas: 1
   selector:
@@ -406,7 +406,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: n8n-proxy
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   type: NodePort
   selector:
@@ -420,7 +420,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: guest-microservice
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   replicas: 2
   selector:
@@ -499,7 +499,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: guest-microservice
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   selector:
     app: guest-microservice
@@ -511,7 +511,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: user-microservice
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   replicas: 2
   selector:
@@ -598,7 +598,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: user-microservice
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   selector:
     app: user-microservice
@@ -610,7 +610,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api-gateway
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   replicas: 2
   selector:
@@ -671,7 +671,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: api-gateway
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   type: NodePort
   selector:

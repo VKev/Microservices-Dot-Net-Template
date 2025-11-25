@@ -104,19 +104,37 @@ resource "kubernetes_namespace" "microservices" {
 }
 
 # 2) Apply từng manifest trong file YAML
-resource "kubectl_manifest" "microservices" {
-  # mỗi phần tử là 1 manifest YAML (Namespace, Secret, Deployment, Service,...)
+resource "kubectl_manifest" "microservices_prereq" {
+  # Apply Secrets/ConfigMaps/PVC/Services first
   for_each = local.eks_enabled ? {
     for idx, doc in data.kubectl_file_documents.microservices[0].documents :
-    idx => doc if try(yamldecode(doc).kind, "") != "Namespace"
+    idx => doc
+    if contains(["Secret", "ConfigMap", "PersistentVolumeClaim", "Service"], try(yamldecode(doc).kind, ""))
   } : {}
 
   yaml_body = each.value
 
-  # Đảm bảo cluster EKS tạo xong trước khi apply YAML
   depends_on = [
     module.eks,
     kubernetes_namespace.microservices
   ]
-  provider   = kubectl.eks
+  provider = kubectl.eks
+}
+
+resource "kubectl_manifest" "microservices_workloads" {
+  # Apply Deployments after prereqs exist
+  for_each = local.eks_enabled ? {
+    for idx, doc in data.kubectl_file_documents.microservices[0].documents :
+    idx => doc
+    if try(yamldecode(doc).kind, "") == "Deployment"
+  } : {}
+
+  yaml_body = each.value
+
+  depends_on = [
+    module.eks,
+    kubernetes_namespace.microservices,
+    kubectl_manifest.microservices_prereq
+  ]
+  provider = kubectl.eks
 }
