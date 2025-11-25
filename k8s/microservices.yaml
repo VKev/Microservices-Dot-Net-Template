@@ -41,7 +41,7 @@ spec:
     spec:
       containers:
         - name: redis
-          image: redis:alpine
+          image: ${redis_image}
           ports:
             - containerPort: 6379
           env:
@@ -129,7 +129,7 @@ spec:
     spec:
       containers:
         - name: rabbit-mq
-          image: rabbitmq:3-management
+          image: ${rabbitmq_image}
           ports:
             - containerPort: 5672
             - containerPort: 15672
@@ -228,7 +228,7 @@ spec:
     spec:
       containers:
         - name: n8n
-          image: n8nio/n8n:latest
+          image: ${n8n_image}
           env:
             - name: N8N_HOST
               value: "0.0.0.0"
@@ -442,7 +442,7 @@ spec:
                     app: guest-microservice
       containers:
         - name: guest-microservice
-          image: guest-microservice
+          image: ${guest_image}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5001
@@ -533,7 +533,7 @@ spec:
                     app: user-microservice
       containers:
         - name: user-microservice
-          image: user-microservice
+          image: ${user_image}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5002
@@ -632,7 +632,7 @@ spec:
                     app: api-gateway
       containers:
         - name: api-gateway
-          image: api-gateway
+          image: ${apigateway_image}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
