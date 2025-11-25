@@ -53,7 +53,7 @@ data "kubectl_file_documents" "microservices" {
 # 2) Apply từng manifest trong file YAML
 resource "kubectl_manifest" "microservices" {
   # mỗi phần tử là 1 manifest YAML (Namespace, Secret, Deployment, Service,...)
-  for_each = local.eks_enabled ? data.kubectl_file_documents.microservices[0].documents : {}
+  for_each = local.eks_enabled ? { for idx, doc in data.kubectl_file_documents.microservices[0].documents : idx => doc } : {}
 
   yaml_body = each.value
 
