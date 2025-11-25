@@ -58,6 +58,6 @@ resource "kubectl_manifest" "microservices" {
   yaml_body = each.value
 
   # Đảm bảo cluster EKS tạo xong trước khi apply YAML
-  depends_on = local.eks_enabled ? [module.eks[0]] : []
+  depends_on = [module.eks]
   provider   = kubectl.eks
 }
