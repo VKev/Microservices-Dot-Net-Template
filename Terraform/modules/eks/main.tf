@@ -42,6 +42,9 @@ module "eks" {
 
   access_entries = var.access_entries
 
+  create_cloudwatch_log_group = var.create_cloudwatch_log_group
+  cloudwatch_log_group_name   = var.cloudwatch_log_group_name
+
   tags = merge(
     {
       Project     = var.project_name

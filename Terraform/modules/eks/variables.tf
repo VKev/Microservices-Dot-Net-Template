@@ -93,3 +93,15 @@ variable "access_entries" {
   description = "EKS access entries map passed to terraform-aws-modules/eks"
   default     = {}
 }
+
+variable "create_cloudwatch_log_group" {
+  type        = bool
+  description = "Whether to create the CloudWatch log group for control plane logs"
+  default     = true
+}
+
+variable "cloudwatch_log_group_name" {
+  type        = string
+  description = "Name of the existing CloudWatch log group to use (set create_cloudwatch_log_group=false to reuse)"
+  default     = null
+}

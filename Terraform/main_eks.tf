@@ -41,6 +41,8 @@ module "eks" {
   node_desired_size               = 4
   node_capacity_type              = "ON_DEMAND"
   environment                     = "dev"
+  create_cloudwatch_log_group     = false
+  cloudwatch_log_group_name       = "/aws/eks/${var.project_name}-eks/cluster"
 
   access_entries = {
     terraform_admin = {
