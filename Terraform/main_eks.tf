@@ -45,6 +45,16 @@ resource "time_sleep" "wait_for_access" {
   depends_on = [module.eks[0].account_access_policy_association_id]
 }
 
+resource "time_sleep" "wait_for_cluster_ready" {
+  count           = local.eks_enabled ? 1 : 0
+  create_duration = "60s"
+
+  depends_on = [
+    time_sleep.wait_for_access,
+    module.eks[0].node_group_name,
+  ]
+}
+
 resource "kubernetes_namespace" "microservices" {
   count    = local.eks_enabled ? 1 : 0
   provider = kubernetes.eks
@@ -52,7 +62,7 @@ resource "kubernetes_namespace" "microservices" {
     name = var.kubernete.namespace
   }
 
-  depends_on = [time_sleep.wait_for_access]
+  depends_on = [time_sleep.wait_for_cluster_ready]
 }
 
 resource "kubernetes_storage_class" "gp3" {
@@ -75,7 +85,7 @@ resource "kubernetes_storage_class" "gp3" {
     type = "gp3"
   }
 
-  depends_on = [time_sleep.wait_for_access]
+  depends_on = [time_sleep.wait_for_cluster_ready]
 }
 
 resource "kubernetes_secret" "redis_auth" {
