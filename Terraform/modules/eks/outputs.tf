@@ -37,3 +37,8 @@ output "admin_access_policy_association_id" {
   description = "Access policy association for Terraform principal."
   value       = aws_eks_access_policy_association.terraform_admin.id
 }
+
+output "account_access_policy_association_id" {
+  description = "Access policy association for the account root (covers assumed roles)."
+  value       = aws_eks_access_policy_association.account_admin.id
+}

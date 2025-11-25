@@ -37,6 +37,14 @@ provider "kubernetes" {
   token                  = local.eks_enabled ? data.aws_eks_cluster_auth.eks[0].token : null
 }
 
+# Give EKS access entry time to propagate before Kubernetes API calls
+resource "time_sleep" "wait_for_access" {
+  count      = local.eks_enabled ? 1 : 0
+  create_duration = "30s"
+
+  depends_on = [module.eks[0].account_access_policy_association_id]
+}
+
 resource "kubernetes_namespace" "microservices" {
   count    = local.eks_enabled ? 1 : 0
   provider = kubernetes.eks
@@ -44,7 +52,7 @@ resource "kubernetes_namespace" "microservices" {
     name = var.kubernete.namespace
   }
 
-  depends_on = [module.eks[0].admin_access_policy_association_id]
+  depends_on = [time_sleep.wait_for_access]
 }
 
 resource "kubernetes_storage_class" "gp3" {
@@ -67,7 +75,7 @@ resource "kubernetes_storage_class" "gp3" {
     type = "gp3"
   }
 
-  depends_on = [module.eks[0].admin_access_policy_association_id]
+  depends_on = [time_sleep.wait_for_access]
 }
 
 resource "kubernetes_secret" "redis_auth" {

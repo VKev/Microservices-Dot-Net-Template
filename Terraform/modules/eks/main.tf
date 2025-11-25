@@ -187,3 +187,23 @@ resource "aws_eks_access_policy_association" "terraform_admin" {
 
   depends_on = [aws_eks_access_entry.terraform_admin]
 }
+
+# Catch-all admin access for the account (handles assumed roles and CI identities)
+resource "aws_eks_access_entry" "account_admin" {
+  cluster_name  = aws_eks_cluster.this.name
+  principal_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"
+  type          = "STANDARD"
+
+  depends_on = [aws_eks_cluster.this]
+}
+
+resource "aws_eks_access_policy_association" "account_admin" {
+  cluster_name  = aws_eks_cluster.this.name
+  principal_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"
+  policy_arn    = "arn:${data.aws_partition.current.partition}:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.account_admin]
+}
