@@ -87,3 +87,9 @@ variable "tags" {
   description = "Extra tags for all EKS resources"
   default     = {}
 }
+
+variable "access_entries" {
+  type        = map(any)
+  description = "EKS access entries map passed to terraform-aws-modules/eks"
+  default     = {}
+}

@@ -40,6 +40,8 @@ module "eks" {
     }
   }
 
+  access_entries = var.access_entries
+
   tags = merge(
     {
       Project     = var.project_name
