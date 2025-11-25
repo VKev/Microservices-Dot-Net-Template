@@ -166,31 +166,8 @@ variable "eks_cluster_endpoint_private_access" {
 
 variable "kubernete" {
   description = "Kubernetes deployment settings (used when use_eks = true)."
-  type = object({
-    namespace         = string
-    redis_password    = string
-    rabbitmq_username = string
-    rabbitmq_password = string
-    jwt_secret        = string
-    guest_db = object({
-      host     = string
-      port     = number
-      name     = string
-      username = string
-      password = string
-      provider = string
-    })
-    user_db = object({
-      host     = string
-      port     = number
-      name     = string
-      username = string
-      password = string
-      provider = string
-      ssl_mode = string
-    })
-  })
-
+  type        = any
+  default     = null
 }
 
 variable "cloudfront_enable_caching" {
