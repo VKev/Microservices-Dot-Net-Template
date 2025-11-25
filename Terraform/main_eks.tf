@@ -76,7 +76,6 @@ provider "kubernetes" {
   host                   = local.eks_cluster_endpoint
   cluster_ca_certificate = local.eks_enabled ? base64decode(local.eks_cluster_ca_data) : ""
   token                  = local.eks_enabled ? data.aws_eks_cluster_auth.eks[0].token : ""
-  load_config_file       = false
 }
 
 # Kubectl provider – dùng để apply YAML K8s (kubectl_manifest)
