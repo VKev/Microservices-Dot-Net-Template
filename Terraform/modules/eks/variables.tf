@@ -99,9 +99,3 @@ variable "create_cloudwatch_log_group" {
   description = "Whether to create the CloudWatch log group for control plane logs"
   default     = true
 }
-
-variable "cloudwatch_log_group_name" {
-  type        = string
-  description = "Name of the existing CloudWatch log group to use (set create_cloudwatch_log_group=false to reuse)"
-  default     = null
-}
