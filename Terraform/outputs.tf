@@ -105,19 +105,6 @@ output "ec2_private_key_pem" {
 }
 
 # EKS Outputs (populated when use_eks = true)
-output "eks_cluster_name" {
-  description = "EKS cluster name"
-  value       = var.use_eks ? module.eks[0].cluster_name : null
-}
-
-output "eks_cluster_endpoint" {
-  description = "EKS cluster endpoint"
-  value       = var.use_eks ? module.eks[0].cluster_endpoint : null
-}
-
-output "eks_node_group_name" {
-  description = "EKS managed node group name"
-  value       = var.use_eks ? module.eks[0].node_group_name : null
-}
+// EKS outputs removed because the EKS module is not declared. Re-enable when adding the module back.
 
 ## Optional ECS outputs commented out (kept minimal)
