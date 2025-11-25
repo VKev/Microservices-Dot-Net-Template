@@ -105,6 +105,29 @@ output "ec2_private_key_pem" {
 }
 
 # EKS Outputs (populated when use_eks = true)
-// EKS outputs removed because the EKS module is not declared. Re-enable when adding the module back.
+output "eks_cluster_name" {
+  description = "EKS cluster name"
+  value       = var.use_eks ? module.eks[0].cluster_name : null
+}
+
+output "eks_cluster_endpoint" {
+  description = "Kubernetes API server endpoint"
+  value       = var.use_eks ? module.eks[0].cluster_endpoint : null
+}
+
+output "eks_cluster_certificate_authority_data" {
+  description = "Base64 encoded certificate authority data"
+  value       = var.use_eks ? module.eks[0].cluster_certificate_authority_data : null
+}
+
+output "eks_cluster_security_group_id" {
+  description = "Cluster security group ID"
+  value       = var.use_eks ? module.eks[0].cluster_security_group_id : null
+}
+
+output "eks_node_security_group_id" {
+  description = "Node shared security group ID"
+  value       = var.use_eks ? module.eks[0].node_security_group_id : null
+}
 
 ## Optional ECS outputs commented out (kept minimal)

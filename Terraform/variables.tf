@@ -146,6 +146,24 @@ variable "use_eks" {
   default     = false
 }
 
+variable "eks_cluster_version" {
+  description = "Kubernetes version for the EKS control plane."
+  type        = string
+  default     = "1.30"
+}
+
+variable "eks_cluster_endpoint_public_access" {
+  description = "Allow public access to the EKS API endpoint (disable for private-only clusters)."
+  type        = bool
+  default     = true
+}
+
+variable "eks_cluster_endpoint_private_access" {
+  description = "Allow access to the EKS API endpoint from within the VPC."
+  type        = bool
+  default     = true
+}
+
 variable "kubernete" {
   description = "Kubernetes deployment settings (used when use_eks = true)."
   type = object({
