@@ -41,21 +41,10 @@ module "eks" {
   node_desired_size               = 4
   node_capacity_type              = "ON_DEMAND"
   environment                     = "dev"
+  enable_cluster_creator_admin_permissions = false
   create_cloudwatch_log_group     = false
 
-  access_entries = {
-    terraform_admin = {
-      principal_arn = data.aws_caller_identity.current.arn
-      policy_associations = {
-        admin = {
-          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-          access_scope = {
-            type = "cluster"
-          }
-        }
-      }
-    }
-  }
+  access_entries = {}
 }
 
 locals {
