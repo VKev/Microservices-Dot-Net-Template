@@ -7,7 +7,20 @@ locals {
   k8s_overrides = try(var.k8s_resources, {})
 
   eks_storage_class_default = "gp2"
-  eks_cluster_addons = try(var.eks_cluster_addons, {})
+  eks_cluster_addons = merge(
+    {
+      "vpc-cni" = {
+        most_recent = true
+        configuration_values = jsonencode({
+          env = {
+            ENABLE_PREFIX_DELEGATION = "true"
+            WARM_PREFIX_TARGET       = "1"
+          }
+        })
+      }
+    },
+    try(var.eks_cluster_addons, {})
+  )
 
   # Resources/replicas/images for each workload are fully provided via k8s.auto.tfvars (no defaults here)
   eks_resources = local.k8s_overrides
@@ -71,6 +84,28 @@ module "eks" {
   cluster_addons                  = local.eks_cluster_addons
 
   access_entries = {}
+}
+
+resource "kubernetes_storage_class_v1" "ebs_csi" {
+  count = local.eks_enabled && local.eks_storage_class != "" ? 1 : 0
+
+  metadata {
+    name = local.eks_storage_class
+  }
+
+  storage_provisioner = "ebs.csi.aws.com"
+  reclaim_policy      = "Delete"
+  volume_binding_mode = "WaitForFirstConsumer"
+  parameters = {
+    type      = "gp3"
+    encrypted = "true"
+  }
+
+  depends_on = [
+    aws_eks_addon.ebs_csi
+  ]
+
+  provider = kubernetes.eks
 }
 
 data "aws_iam_policy_document" "ebs_csi_irsa" {
