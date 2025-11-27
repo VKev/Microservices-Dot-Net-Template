@@ -4,6 +4,18 @@ locals {
 
   eks_microservices_template = abspath("${path.module}/../k8s/microservices.yaml")
 
+  k8s_overrides = try(var.k8s_resources, {})
+
+  eks_storage_class_default = "gp2"
+
+  # Resources/replicas/images for each workload are fully provided via k8s.auto.tfvars (no defaults here)
+  eks_resources = local.k8s_overrides
+
+  eks_storage_class = try(
+    local.k8s_overrides.storage_class,
+    try(local.k8s_overrides["storage_class"], local.eks_storage_class_default)
+  )
+
   eks_images = local.eks_enabled ? {
     redis      = "${var.services["redis"].ecs_container_image_repository_url}:${var.services["redis"].ecs_container_image_tag}"
     rabbitmq   = "${var.services["rabbitmq"].ecs_container_image_repository_url}:${var.services["rabbitmq"].ecs_container_image_tag}"
@@ -21,6 +33,15 @@ locals {
     user_image       = lookup(local.eks_images, "user", "")
     guest_image      = lookup(local.eks_images, "guest", "")
     apigateway_image = lookup(local.eks_images, "apigateway", "")
+    storage_class    = local.eks_storage_class
+
+    redis_resources      = local.eks_resources.redis
+    rabbitmq_resources   = local.eks_resources.rabbitmq
+    n8n_resources        = local.eks_resources.n8n
+    n8n_proxy_resources  = local.eks_resources.n8n_proxy
+    guest_resources      = local.eks_resources.guest
+    user_resources       = local.eks_resources.user
+    apigateway_resources = local.eks_resources.apigateway
   }) : ""
 }
 

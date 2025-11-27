@@ -146,6 +146,12 @@ variable "use_eks" {
   default     = false
 }
 
+variable "k8s_resources" {
+  description = "Override Kubernetes replicas/CPU/memory/storage class for EKS deployments."
+  type        = any
+  default     = {}
+}
+
 variable "eks_cluster_version" {
   description = "Kubernetes version for the EKS control plane."
   type        = string

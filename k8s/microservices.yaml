@@ -18,6 +18,7 @@ metadata:
   name: redis-data
   namespace: ${namespace}
 spec:
+  storageClassName: ${storage_class}
   accessModes:
     - ReadWriteOnce
   resources:
@@ -30,7 +31,7 @@ metadata:
   name: redis
   namespace: ${namespace}
 spec:
-  replicas: 1
+  replicas: ${redis_resources.replicas}
   selector:
     matchLabels:
       app: redis
@@ -52,11 +53,11 @@ spec:
                   key: redis-password
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
+              cpu: ${redis_resources.requests.cpu}
+              memory: ${redis_resources.requests.memory}
             limits:
-              cpu: 200m
-              memory: 256Mi
+              cpu: ${redis_resources.limits.cpu}
+              memory: ${redis_resources.limits.memory}
           command: ["sh", "-c", "exec redis-server --requirepass \"$REDIS_PASSWORD\""]
           livenessProbe:
             exec:
@@ -80,7 +81,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: redis
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   type: NodePort
   selector:
@@ -106,6 +107,7 @@ metadata:
   name: rabbitmq-data
   namespace: ${namespace}
 spec:
+  storageClassName: ${storage_class}
   accessModes:
     - ReadWriteOnce
   resources:
@@ -118,7 +120,7 @@ metadata:
   name: rabbit-mq
   namespace: ${namespace}
 spec:
-  replicas: 1
+  replicas: ${rabbitmq_resources.replicas}
   selector:
     matchLabels:
       app: rabbit-mq
@@ -153,11 +155,11 @@ spec:
                   key: rabbitmq-password
           resources:
             requests:
-              cpu: 200m
-              memory: 256Mi
+              cpu: ${rabbitmq_resources.requests.cpu}
+              memory: ${rabbitmq_resources.requests.memory}
             limits:
-              cpu: 500m
-              memory: 512Mi
+              cpu: ${rabbitmq_resources.limits.cpu}
+              memory: ${rabbitmq_resources.limits.memory}
           livenessProbe:
             exec:
               command: ["rabbitmq-diagnostics", "-q", "ping"]
@@ -205,6 +207,7 @@ metadata:
   name: n8n-data
   namespace: ${namespace}
 spec:
+  storageClassName: ${storage_class}
   accessModes:
     - ReadWriteOnce
   resources:
@@ -217,7 +220,7 @@ metadata:
   name: n8n
   namespace: ${namespace}
 spec:
-  replicas: 1
+  replicas: ${n8n_resources.replicas}
   selector:
     matchLabels:
       app: n8n
@@ -266,11 +269,11 @@ spec:
               value: "http://localhost:5678/n8n/"
           resources:
             requests:
-              cpu: 300m
-              memory: 512Mi
+              cpu: ${n8n_resources.requests.cpu}
+              memory: ${n8n_resources.requests.memory}
             limits:
-              cpu: 800m
-              memory: 768Mi
+              cpu: ${n8n_resources.limits.cpu}
+              memory: ${n8n_resources.limits.memory}
           ports:
             - containerPort: 5678
           livenessProbe:
@@ -297,7 +300,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: n8n
-  namespace: microservices
+  namespace: ${namespace}
 spec:
   type: ClusterIP
   selector:
@@ -372,7 +375,7 @@ metadata:
   name: n8n-proxy
   namespace: ${namespace}
 spec:
-  replicas: 1
+  replicas: ${n8n_proxy_resources.replicas}
   selector:
     matchLabels:
       app: n8n-proxy
@@ -383,16 +386,16 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: nginx:1.27-alpine
+          image: ${n8n_proxy_resources.image}
           ports:
             - containerPort: 5678
           resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
+              cpu: ${n8n_proxy_resources.requests.cpu}
+              memory: ${n8n_proxy_resources.requests.memory}
             limits:
-              cpu: 200m
-              memory: 128Mi
+              cpu: ${n8n_proxy_resources.limits.cpu}
+              memory: ${n8n_proxy_resources.limits.memory}
           volumeMounts:
             - name: nginx-conf
               mountPath: /etc/nginx/nginx.conf
@@ -422,7 +425,7 @@ metadata:
   name: guest-microservice
   namespace: ${namespace}
 spec:
-  replicas: 2
+  replicas: ${guest_resources.replicas}
   selector:
     matchLabels:
       app: guest-microservice
@@ -489,11 +492,11 @@ spec:
               value: "true"
           resources:
             requests:
-              cpu: 300m
-              memory: 384Mi
+              cpu: ${guest_resources.requests.cpu}
+              memory: ${guest_resources.requests.memory}
             limits:
-              cpu: 700m
-              memory: 512Mi
+              cpu: ${guest_resources.limits.cpu}
+              memory: ${guest_resources.limits.memory}
 ---
 apiVersion: v1
 kind: Service
@@ -513,7 +516,7 @@ metadata:
   name: user-microservice
   namespace: ${namespace}
 spec:
-  replicas: 2
+  replicas: ${user_resources.replicas}
   selector:
     matchLabels:
       app: user-microservice
@@ -588,11 +591,11 @@ spec:
               value: "true"
           resources:
             requests:
-              cpu: 300m
-              memory: 384Mi
+              cpu: ${user_resources.requests.cpu}
+              memory: ${user_resources.requests.memory}
             limits:
-              cpu: 700m
-              memory: 512Mi
+              cpu: ${user_resources.limits.cpu}
+              memory: ${user_resources.limits.memory}
 ---
 apiVersion: v1
 kind: Service
@@ -612,7 +615,7 @@ metadata:
   name: api-gateway
   namespace: ${namespace}
 spec:
-  replicas: 2
+  replicas: ${apigateway_resources.replicas}
   selector:
     matchLabels:
       app: api-gateway
@@ -661,11 +664,11 @@ spec:
               value: "60"
           resources:
             requests:
-              cpu: 250m
-              memory: 256Mi
+              cpu: ${apigateway_resources.requests.cpu}
+              memory: ${apigateway_resources.requests.memory}
             limits:
-              cpu: 600m
-              memory: 384Mi
+              cpu: ${apigateway_resources.limits.cpu}
+              memory: ${apigateway_resources.limits.memory}
 ---
 apiVersion: v1
 kind: Service
