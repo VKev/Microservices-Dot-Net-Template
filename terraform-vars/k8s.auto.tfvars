@@ -1,5 +1,5 @@
 k8s_resources = {
-  storage_class = "gp2" # default EKS StorageClass; change to gp3/custom if available
+  storage_class = "sc1" # default EKS StorageClass; change to gp3/custom if available
 
   redis = {
     replicas = 1
