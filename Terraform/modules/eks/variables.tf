@@ -23,7 +23,7 @@ variable "cluster_version" {
 variable "enable_cluster_creator_admin_permissions" {
   type        = bool
   description = "Give the cluster creator IAM principal admin access in Kubernetes (via EKS access entries)"
-  default     = false
+  default     = true
 }
 
 variable "cluster_endpoint_public_access" {

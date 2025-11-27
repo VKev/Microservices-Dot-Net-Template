@@ -16,7 +16,7 @@ module "eks" {
 
   # Grant cluster creator (IAM identity đang chạy Terraform) quyền admin Kubernetes
   # để sau đó có thể tạo access entries / aws-auth / RBAC theo doc
-  enable_cluster_creator_admin_permissions = false
+  enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
 
   # Endpoint exposure – dev có thể cho public, prod nên tắt public endpoint
   cluster_endpoint_public_access  = var.cluster_endpoint_public_access

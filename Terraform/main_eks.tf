@@ -41,7 +41,7 @@ module "eks" {
   node_desired_size               = 4
   node_capacity_type              = "ON_DEMAND"
   environment                     = "dev"
-  enable_cluster_creator_admin_permissions = false
+  enable_cluster_creator_admin_permissions = true
   create_cloudwatch_log_group     = false
 
   access_entries = {}
