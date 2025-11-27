@@ -7,15 +7,7 @@ locals {
   k8s_overrides = try(var.k8s_resources, {})
 
   eks_storage_class_default = "gp2"
-
-  eks_cluster_addons = merge(
-    {
-      "aws-ebs-csi-driver" = {
-        most_recent = true
-      }
-    },
-    try(var.eks_cluster_addons, {})
-  )
+  eks_cluster_addons = try(var.eks_cluster_addons, {})
 
   # Resources/replicas/images for each workload are fully provided via k8s.auto.tfvars (no defaults here)
   eks_resources = local.k8s_overrides
@@ -79,6 +71,55 @@ module "eks" {
   cluster_addons                  = local.eks_cluster_addons
 
   access_entries = {}
+}
+
+data "aws_iam_policy_document" "ebs_csi_irsa" {
+  count = local.eks_enabled ? 1 : 0
+
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
+
+    principals {
+      type        = "Federated"
+      identifiers = [module.eks[0].oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${replace(module.eks[0].cluster_oidc_issuer_url, "https://", "")}:sub"
+      values   = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
+    }
+  }
+}
+
+resource "aws_iam_role" "ebs_csi" {
+  count = local.eks_enabled ? 1 : 0
+
+  name               = "${var.project_name}-ebs-csi-driver"
+  assume_role_policy = data.aws_iam_policy_document.ebs_csi_irsa[0].json
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi" {
+  count = local.eks_enabled ? 1 : 0
+
+  role       = aws_iam_role.ebs_csi[0].name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+}
+
+resource "aws_eks_addon" "ebs_csi" {
+  count = local.eks_enabled ? 1 : 0
+
+  cluster_name             = module.eks[0].cluster_name
+  addon_name               = "aws-ebs-csi-driver"
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+  service_account_role_arn = aws_iam_role.ebs_csi[0].arn
+  most_recent              = true
+
+  depends_on = [
+    aws_iam_role_policy_attachment.ebs_csi
+  ]
 }
 
 locals {

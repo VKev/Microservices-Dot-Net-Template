@@ -22,3 +22,13 @@ output "node_security_group_id" {
   description = "Node shared security group ID"
   value       = module.eks.node_security_group_id
 }
+
+output "cluster_oidc_issuer_url" {
+  description = "EKS cluster OIDC issuer URL"
+  value       = module.eks.cluster_oidc_issuer_url
+}
+
+output "oidc_provider_arn" {
+  description = "IAM OIDC provider ARN for the EKS cluster"
+  value       = module.eks.oidc_provider_arn
+}
