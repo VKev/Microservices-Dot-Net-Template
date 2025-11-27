@@ -21,6 +21,7 @@ module "eks" {
   # Endpoint exposure – dev có thể cho public, prod nên tắt public endpoint
   cluster_endpoint_public_access  = var.cluster_endpoint_public_access
   cluster_endpoint_private_access = var.cluster_endpoint_private_access
+  cluster_addons                  = var.cluster_addons
 
   # Managed node group – theo doc "manage compute resources by using nodes"
   eks_managed_node_group_defaults = {

@@ -20,7 +20,7 @@ k8s_resources = {
   }
 
   n8n_proxy = {
-    replicas = 1
+    replicas = 0
     image    = "public.ecr.aws/nginx/nginx:1.27-alpine"
     requests = { cpu = "25m", memory = "32Mi" }
     limits   = { cpu = "100m", memory = "64Mi" }

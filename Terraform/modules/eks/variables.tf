@@ -39,6 +39,12 @@ variable "cluster_endpoint_private_access" {
   default     = true
 }
 
+variable "cluster_addons" {
+  type        = map(any)
+  description = "EKS cluster addons map passed to terraform-aws-modules/eks"
+  default     = {}
+}
+
 variable "node_instance_types" {
   type        = list(string)
   description = "EC2 instance types for EKS managed node groups"

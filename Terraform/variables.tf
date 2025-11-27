@@ -146,6 +146,12 @@ variable "use_eks" {
   default     = false
 }
 
+variable "eks_cluster_addons" {
+  description = "Optional extra EKS cluster addons map passed to the EKS module (merged with defaults)."
+  type        = map(any)
+  default     = {}
+}
+
 variable "k8s_resources" {
   description = "Override Kubernetes replicas/CPU/memory/storage class for EKS deployments."
   type        = any

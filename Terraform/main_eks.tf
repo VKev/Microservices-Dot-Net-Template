@@ -8,6 +8,15 @@ locals {
 
   eks_storage_class_default = "gp2"
 
+  eks_cluster_addons = merge(
+    {
+      "aws-ebs-csi-driver" = {
+        most_recent = true
+      }
+    },
+    try(var.eks_cluster_addons, {})
+  )
+
   # Resources/replicas/images for each workload are fully provided via k8s.auto.tfvars (no defaults here)
   eks_resources = local.k8s_overrides
 
@@ -15,6 +24,8 @@ locals {
     local.k8s_overrides.storage_class,
     try(local.k8s_overrides["storage_class"], local.eks_storage_class_default)
   )
+
+  pvc_storage_class_line = local.eks_storage_class != "" ? "  storageClassName: ${local.eks_storage_class}" : ""
 
   eks_images = local.eks_enabled ? {
     redis      = "${var.services["redis"].ecs_container_image_repository_url}:${var.services["redis"].ecs_container_image_tag}"
@@ -34,6 +45,7 @@ locals {
     guest_image      = lookup(local.eks_images, "guest", "")
     apigateway_image = lookup(local.eks_images, "apigateway", "")
     storage_class    = local.eks_storage_class
+    pvc_storage_class = local.pvc_storage_class_line
 
     redis_resources      = local.eks_resources.redis
     rabbitmq_resources   = local.eks_resources.rabbitmq
@@ -64,6 +76,7 @@ module "eks" {
   environment                     = "dev"
   enable_cluster_creator_admin_permissions = true
   create_cloudwatch_log_group     = false
+  cluster_addons                  = local.eks_cluster_addons
 
   access_entries = {}
 }
