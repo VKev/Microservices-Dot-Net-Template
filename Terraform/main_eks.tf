@@ -73,7 +73,7 @@ module "eks" {
   cluster_version                 = var.eks_cluster_version
   cluster_endpoint_public_access  = var.eks_cluster_endpoint_public_access
   cluster_endpoint_private_access = var.eks_cluster_endpoint_private_access
-  node_instance_types             = ["t3.micro"]
+  node_instance_types             = ["t3.small"]
   node_min_size                   = 2
   node_max_size                   = 4
   node_desired_size               = 4

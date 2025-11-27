@@ -48,7 +48,7 @@ variable "cluster_addons" {
 variable "node_instance_types" {
   type        = list(string)
   description = "EC2 instance types for EKS managed node groups"
-  default     = ["t3.micro"]
+  default     = ["t3.small"]
 }
 
 variable "node_ami_type" {
