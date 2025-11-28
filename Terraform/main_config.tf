@@ -247,7 +247,8 @@ resource "aws_service_discovery_private_dns_namespace" "ecs_namespace" {
 
 resource "aws_secretsmanager_secret" "dockerhub" {
   count = var.dockerhub_credentials_secret_arn == null && var.dockerhub_username != "" && var.dockerhub_password != "" ? 1 : 0
-  name  = "ecr-pullthroughcache/${var.dockerhub_pull_through_prefix}-${var.project_name}"
+  # New name to force recreation with valid JSON credentials
+  name  = "ecr-pullthroughcache/${var.dockerhub_pull_through_prefix}-${var.project_name}-creds"
 
   recovery_window_in_days = 0
 }
