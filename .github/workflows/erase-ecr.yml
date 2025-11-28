@@ -36,6 +36,9 @@ jobs:
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Load project/region from Terraform vars
         run: python Terraform/scripts/export_tf_env.py >> "$GITHUB_ENV"
         env:
