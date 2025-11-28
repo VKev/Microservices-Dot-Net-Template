@@ -87,6 +87,18 @@ module "eks" {
   access_entries = {}
 }
 
+resource "aws_security_group_rule" "eks_nodeports_from_alb" {
+  count = local.eks_enabled ? 1 : 0
+
+  type                     = "ingress"
+  description              = "Allow ALB to reach EKS NodePort services"
+  security_group_id        = module.eks[0].node_security_group_id
+  source_security_group_id = module.alb.alb_sg_id
+  from_port                = 30000
+  to_port                  = 32767
+  protocol                 = "tcp"
+}
+
 resource "kubernetes_storage_class_v1" "ebs_csi" {
   count = local.eks_enabled && local.eks_storage_class != "" ? 1 : 0
 

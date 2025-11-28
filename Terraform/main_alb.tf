@@ -4,22 +4,23 @@ module "alb" {
   project_name      = var.project_name
   vpc_id            = module.vpc.vpc_id
   public_subnet_ids = module.vpc.public_subnet_ids
+  # NodePorts exposed by the EKS services (only used when var.use_eks = true)
+  # API Gateway NodePort: 32080
+  # n8n proxy NodePort:   30578
 
-  # SSL/TLS Certificate Configuration
-  certificate_arn       = var.certificate_arn
-  enable_https_redirect = var.enable_https_redirect
-
+  # When running on EKS, target groups need to register EC2 nodes (instance targets) on NodePorts.
+  # For ECS, keep the original target types passed from service definitions.
   target_groups_definition = [
     {
       # API Gateway Target Group
       name_suffix = "apigateway"
-      port        = var.services["apigateway"].alb_target_group_port
+      port        = var.use_eks ? 32080 : var.services["apigateway"].alb_target_group_port
       protocol    = var.services["apigateway"].alb_target_group_protocol
-      target_type = var.services["apigateway"].alb_target_group_type
+      target_type = var.use_eks ? "instance" : var.services["apigateway"].alb_target_group_type
       health_check = {
         enabled             = true
         path                = "/api/health"
-        port                = var.services["apigateway"].alb_health_check.port
+        port                = var.use_eks ? "32080" : var.services["apigateway"].alb_health_check.port
         protocol            = var.services["apigateway"].alb_health_check.protocol
         matcher             = var.services["apigateway"].alb_health_check.matcher
         interval            = var.services["apigateway"].alb_health_check.interval
@@ -31,13 +32,13 @@ module "alb" {
     {
       # n8n Target Group
       name_suffix = "n8n"
-      port        = var.services["n8n"].alb_target_group_port
+      port        = var.use_eks ? 30578 : var.services["n8n"].alb_target_group_port
       protocol    = var.services["n8n"].alb_target_group_protocol
-      target_type = var.services["n8n"].alb_target_group_type
+      target_type = var.use_eks ? "instance" : var.services["n8n"].alb_target_group_type
       health_check = {
         enabled             = var.services["n8n"].alb_health_check.enabled
         path                = var.services["n8n"].alb_health_check.path
-        port                = var.services["n8n"].alb_health_check.port
+        port                = var.use_eks ? "30578" : var.services["n8n"].alb_health_check.port
         protocol            = var.services["n8n"].alb_health_check.protocol
         matcher             = var.services["n8n"].alb_health_check.matcher
         interval            = var.services["n8n"].alb_health_check.interval
@@ -47,6 +48,10 @@ module "alb" {
       }
     }
   ]
+
+  # SSL/TLS Certificate Configuration
+  certificate_arn       = var.certificate_arn
+  enable_https_redirect = var.enable_https_redirect
 
   default_listener_action = {
     type                = "forward"
@@ -60,5 +65,28 @@ module "alb" {
       conditions          = var.services["n8n"].alb_listener_rule_conditions
     }
   ]
+}
+
+# When using EKS (ECS services disabled), register the managed node group ASG with the ALB target groups
+data "aws_eks_node_group" "default" {
+  count           = var.use_eks ? 1 : 0
+  cluster_name    = var.use_eks ? module.eks[0].cluster_name : ""
+  node_group_name = var.use_eks ? "default" : ""
+
+  depends_on = [module.eks]
+}
+
+resource "aws_autoscaling_attachment" "alb_apigateway_eks" {
+  count = var.use_eks ? 1 : 0
+
+  autoscaling_group_name = data.aws_eks_node_group.default[0].resources[0].autoscaling_groups[0].name
+  lb_target_group_arn    = module.alb.target_group_arns_map["apigateway"]
+}
+
+resource "aws_autoscaling_attachment" "alb_n8n_eks" {
+  count = var.use_eks ? 1 : 0
+
+  autoscaling_group_name = data.aws_eks_node_group.default[0].resources[0].autoscaling_groups[0].name
+  lb_target_group_arn    = module.alb.target_group_arns_map["n8n"]
 }
 
