@@ -104,25 +104,18 @@ module "ecs_server3" {
         {
           # nginx reverse proxy to expose n8n under /n8n via ALB
           name                 = "n8n-proxy"
-          image_repository_url = "docker.io/library/nginx"
-          image_tag            = "1.27-alpine"
-          cpu                  = 64
-          memory               = 128
-          essential            = true
-          port_mappings = [
-            {
-              container_port = 8088
-              host_port      = 0
-              protocol       = "tcp"
-              name           = "n8n-proxy"
-            }
-          ]
+          image_repository_url = var.services["nginx"].ecs_container_image_repository_url
+          image_tag            = var.services["nginx"].ecs_container_image_tag
+          cpu                  = var.services["nginx"].ecs_container_cpu
+          memory               = var.services["nginx"].ecs_container_memory
+          essential            = var.services["nginx"].ecs_container_essential
+          port_mappings        = var.services["nginx"].ecs_container_port_mappings
           health_check = {
-            command     = ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8088/n8n/healthz || exit 1"]
-            interval    = 30
-            timeout     = 5
-            retries     = 3
-            startPeriod = 30
+            command     = var.services["nginx"].ecs_container_health_check.command
+            interval    = var.services["nginx"].ecs_container_health_check.interval
+            timeout     = var.services["nginx"].ecs_container_health_check.timeout
+            retries     = var.services["nginx"].ecs_container_health_check.retries
+            startPeriod = var.services["nginx"].ecs_container_health_check.startPeriod
           }
           command = [
             "sh",
