@@ -51,6 +51,12 @@ variable "node_instance_types" {
   default     = ["t3.small"]
 }
 
+variable "node_iam_role_additional_policies" {
+  type        = map(string)
+  description = "Additional IAM policy ARNs to attach to EKS managed node group IAM roles (e.g., ECR access)"
+  default     = {}
+}
+
 variable "node_ami_type" {
   type        = string
   description = "AMI type for EKS nodes"

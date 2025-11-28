@@ -71,6 +71,10 @@ module "eks" {
   cluster_endpoint_public_access  = var.eks_cluster_endpoint_public_access
   cluster_endpoint_private_access = var.eks_cluster_endpoint_private_access
   node_instance_types             = ["t3.small"]
+  node_iam_role_additional_policies = {
+    ecr_readonly = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+    ecr_ptc      = aws_iam_policy.ecs_task_ecr_ptc.arn
+  }
   node_min_size                   = 2
   node_max_size                   = 4
   node_desired_size               = 4

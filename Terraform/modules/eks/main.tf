@@ -25,7 +25,8 @@ module "eks" {
 
   # Managed node group – theo doc "manage compute resources by using nodes"
   eks_managed_node_group_defaults = {
-    instance_types = var.node_instance_types
+    instance_types               = var.node_instance_types
+    iam_role_additional_policies = var.node_iam_role_additional_policies
   }
 
   eks_managed_node_groups = {
