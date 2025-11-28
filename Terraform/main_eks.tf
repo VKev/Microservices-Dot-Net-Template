@@ -30,8 +30,6 @@ locals {
     try(local.k8s_overrides["storage_class"], local.eks_storage_class_default)
   )
 
-  pvc_storage_class_line = local.eks_storage_class != "" ? "  storageClassName: ${local.eks_storage_class}" : ""
-
   eks_images = local.eks_enabled ? {
     redis      = "${var.services["redis"].ecs_container_image_repository_url}:${var.services["redis"].ecs_container_image_tag}"
     rabbitmq   = "${var.services["rabbitmq"].ecs_container_image_repository_url}:${var.services["rabbitmq"].ecs_container_image_tag}"
@@ -50,7 +48,6 @@ locals {
     guest_image      = lookup(local.eks_images, "guest", "")
     apigateway_image = lookup(local.eks_images, "apigateway", "")
     storage_class    = local.eks_storage_class
-    pvc_storage_class = local.pvc_storage_class_line
 
     redis_resources      = local.eks_resources.redis
     rabbitmq_resources   = local.eks_resources.rabbitmq

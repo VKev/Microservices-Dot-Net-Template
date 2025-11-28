@@ -18,7 +18,9 @@ metadata:
   name: redis-data
   namespace: ${namespace}
 spec:
-${pvc_storage_class}
+%{ if storage_class != "" }
+  storageClassName: ${storage_class}
+%{ endif }
   accessModes:
     - ReadWriteOnce
   resources:
@@ -107,7 +109,9 @@ metadata:
   name: rabbitmq-data
   namespace: ${namespace}
 spec:
-${pvc_storage_class}
+%{ if storage_class != "" }
+  storageClassName: ${storage_class}
+%{ endif }
   accessModes:
     - ReadWriteOnce
   resources:
@@ -207,7 +211,9 @@ metadata:
   name: n8n-data
   namespace: ${namespace}
 spec:
-${pvc_storage_class}
+%{ if storage_class != "" }
+  storageClassName: ${storage_class}
+%{ endif }
   accessModes:
     - ReadWriteOnce
   resources:
