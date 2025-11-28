@@ -268,6 +268,10 @@ resource "aws_ecr_pull_through_cache_rule" "dockerhub" {
   ecr_repository_prefix = var.dockerhub_pull_through_prefix
   upstream_registry_url = var.dockerhub_pull_through_registry
   credential_arn        = coalesce(var.dockerhub_credentials_secret_arn, try(aws_secretsmanager_secret.dockerhub[0].arn, null))
+
+  depends_on = [
+    aws_secretsmanager_secret_version.dockerhub
+  ]
 }
 
 # CloudFront Module (Optional - for free HTTPS)
