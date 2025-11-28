@@ -21,7 +21,7 @@ k8s_resources = {
 
   n8n_proxy = {
     replicas = 1
-    image    = "936910352865.dkr.ecr.us-east-1.amazonaws.com/dockerhub/library/nginx:1.27-alpine"
+    image    = "936910352865.dkr.ecr.us-east-1.amazonaws.com/dockerhub/nginx:1.27-alpine"
     requests = { cpu = "25m", memory = "32Mi" }
     limits   = { cpu = "100m", memory = "64Mi" }
   }
