@@ -256,11 +256,13 @@ resource "aws_secretsmanager_secret" "dockerhub" {
 resource "aws_secretsmanager_secret_version" "dockerhub" {
   count     = length(aws_secretsmanager_secret.dockerhub) == 0 ? 0 : 1
   secret_id = aws_secretsmanager_secret.dockerhub[0].id
+
   secret_string = jsonencode({
-    username = var.dockerhub_username
-    password = var.dockerhub_password
+    username    = var.dockerhub_username
+    accessToken = var.dockerhub_password  # this should be your Docker Hub access token
   })
 }
+
 
 resource "aws_ecr_pull_through_cache_rule" "dockerhub" {
   count = var.dockerhub_credentials_secret_arn != null || (var.dockerhub_username != "" && var.dockerhub_password != "") ? 1 : 0
