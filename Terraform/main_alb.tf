@@ -67,26 +67,21 @@ module "alb" {
   ]
 }
 
-# When using EKS (ECS services disabled), register the managed node group ASG with the ALB target groups
-data "aws_eks_node_group" "default" {
-  count           = var.use_eks ? 1 : 0
-  cluster_name    = var.use_eks ? module.eks[0].cluster_name : ""
-  node_group_name = var.use_eks ? "default" : ""
-
-  depends_on = [module.eks]
+locals {
+  eks_default_asg_name = var.use_eks ? module.eks[0].managed_node_groups["default"].resources[0].autoscaling_groups[0].name : null
 }
 
 resource "aws_autoscaling_attachment" "alb_apigateway_eks" {
   count = var.use_eks ? 1 : 0
 
-  autoscaling_group_name = data.aws_eks_node_group.default[0].resources[0].autoscaling_groups[0].name
+  autoscaling_group_name = local.eks_default_asg_name
   lb_target_group_arn    = module.alb.target_group_arns_map["apigateway"]
 }
 
 resource "aws_autoscaling_attachment" "alb_n8n_eks" {
   count = var.use_eks ? 1 : 0
 
-  autoscaling_group_name = data.aws_eks_node_group.default[0].resources[0].autoscaling_groups[0].name
+  autoscaling_group_name = local.eks_default_asg_name
   lb_target_group_arn    = module.alb.target_group_arns_map["n8n"]
 }
 

@@ -32,3 +32,8 @@ output "oidc_provider_arn" {
   description = "IAM OIDC provider ARN for the EKS cluster"
   value       = module.eks.oidc_provider_arn
 }
+
+output "managed_node_groups" {
+  description = "Map of managed node groups created by the EKS module (includes resources/ASGs)."
+  value       = module.eks.eks_managed_node_groups
+}
