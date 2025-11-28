@@ -249,12 +249,7 @@ resource "aws_secretsmanager_secret" "dockerhub" {
   count = var.dockerhub_credentials_secret_arn == null && var.dockerhub_username != "" && var.dockerhub_password != "" ? 1 : 0
   name  = "ecr-pullthroughcache/${var.dockerhub_pull_through_prefix}-${var.project_name}"
 
-  recovery_window_in_days       = 0
-  force_delete_without_recovery = true
-
-  lifecycle {
-    create_before_destroy = true
-  }
+  recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "dockerhub" {
