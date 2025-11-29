@@ -532,7 +532,7 @@ spec:
             - name: Database__Provider
               value: TERRAFORM_RDS_PROVIDER_GUEST_DEFAULTDB
             - name: RabbitMq__Host
-              value: rabbitmq
+              value: rabbit-mq
             - name: RabbitMq__Port
               value: "5672"
             - name: RabbitMq__Username
@@ -625,7 +625,7 @@ spec:
             - name: Database__SslMode
               value: TERRAFORM_RDS_SSLMODE_USER_DEFAULTDB
             - name: RabbitMq__Host
-              value: rabbitmq
+              value: rabbit-mq
             - name: RabbitMq__Port
               value: "5672"
             - name: RabbitMq__Username

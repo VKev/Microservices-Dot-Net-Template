@@ -22,9 +22,13 @@ def main():
         results = {}
         
         # Perform replacements on each doc
+        # Sort keys by length descending to prevent partial replacements of longer keys
+        sorted_keys = sorted(replacements.keys(), key=len, reverse=True)
+        
         for key, content in docs_map.items():
             resolved_content = content
-            for k, v in replacements.items():
+            for k in sorted_keys:
+                v = replacements[k]
                 if k and v:
                     resolved_content = resolved_content.replace(k, str(v))
             results[key] = resolved_content
