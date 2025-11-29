@@ -2,7 +2,7 @@ locals {
   eks_enabled   = var.use_eks
   eks_namespace = "microservices"
 
-  eks_microservices_template = abspath("${path.module}/../k8s/microservices.yaml")
+  eks_microservices_template_path = abspath("${path.module}/../k8s/microservices.yaml")
 
   k8s_overrides = try(var.k8s_resources, {})
 
@@ -39,24 +39,28 @@ locals {
     apigateway = "${var.services["apigateway"].ecs_container_image_repository_url}:${var.services["apigateway"].ecs_container_image_tag}"
   } : {}
 
-  eks_microservices_content = local.eks_enabled ? templatefile(local.eks_microservices_template, {
-    namespace        = local.eks_namespace
-    redis_image      = lookup(local.eks_images, "redis", "")
-    rabbitmq_image   = lookup(local.eks_images, "rabbitmq", "")
-    n8n_image        = lookup(local.eks_images, "n8n", "")
-    user_image       = lookup(local.eks_images, "user", "")
-    guest_image      = lookup(local.eks_images, "guest", "")
-    apigateway_image = lookup(local.eks_images, "apigateway", "")
-    storage_class    = local.eks_storage_class
+  eks_microservices_content = local.eks_enabled ? (
+    var.k8s_microservices_manifest != null && var.k8s_microservices_manifest != "" ?
+    var.k8s_microservices_manifest :
+    templatefile(local.eks_microservices_template_path, {
+      namespace        = local.eks_namespace
+      redis_image      = lookup(local.eks_images, "redis", "")
+      rabbitmq_image   = lookup(local.eks_images, "rabbitmq", "")
+      n8n_image        = lookup(local.eks_images, "n8n", "")
+      user_image       = lookup(local.eks_images, "user", "")
+      guest_image      = lookup(local.eks_images, "guest", "")
+      apigateway_image = lookup(local.eks_images, "apigateway", "")
+      storage_class    = local.eks_storage_class
 
-    redis_resources      = local.eks_resources.redis
-    rabbitmq_resources   = local.eks_resources.rabbitmq
-    n8n_resources        = local.eks_resources.n8n
-    n8n_proxy_resources  = local.eks_resources.n8n_proxy
-    guest_resources      = local.eks_resources.guest
-    user_resources       = local.eks_resources.user
-    apigateway_resources = local.eks_resources.apigateway
-  }) : ""
+      redis_resources      = local.eks_resources.redis
+      rabbitmq_resources   = local.eks_resources.rabbitmq
+      n8n_resources        = local.eks_resources.n8n
+      n8n_proxy_resources  = local.eks_resources.n8n_proxy
+      guest_resources      = local.eks_resources.guest
+      user_resources       = local.eks_resources.user
+      apigateway_resources = local.eks_resources.apigateway
+    })
+  ) : ""
 }
 
 module "eks" {

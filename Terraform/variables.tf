@@ -158,6 +158,12 @@ variable "k8s_resources" {
   default     = {}
 }
 
+variable "k8s_microservices_manifest" {
+  description = "Override the rendered Kubernetes YAML (multi-doc) for the microservices namespace. When set, Terraform will use this value directly instead of rendering k8s/microservices.yaml."
+  type        = string
+  default     = null
+}
+
 variable "eks_cluster_version" {
   description = "Kubernetes version for the EKS control plane."
   type        = string
