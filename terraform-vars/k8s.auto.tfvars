@@ -165,17 +165,17 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rabbit-mq
+  name: rabbitmq
   namespace: microservices
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: rabbit-mq
+      app: rabbitmq
   template:
     metadata:
       labels:
-        app: rabbit-mq
+        app: rabbitmq
     spec:
       containers:
         - name: rabbit-mq
@@ -238,7 +238,7 @@ metadata:
 spec:
   type: NodePort
   selector:
-    app: rabbit-mq
+    app: rabbitmq
   ports:
     - name: amqp
       port: 5672
@@ -532,7 +532,7 @@ spec:
             - name: Database__Provider
               value: TERRAFORM_RDS_PROVIDER_GUEST_DEFAULTDB
             - name: RabbitMq__Host
-              value: rabbit-mq
+              value: rabbitmq
             - name: RabbitMq__Port
               value: "5672"
             - name: RabbitMq__Username
@@ -625,7 +625,7 @@ spec:
             - name: Database__SslMode
               value: TERRAFORM_RDS_SSLMODE_USER_DEFAULTDB
             - name: RabbitMq__Host
-              value: rabbit-mq
+              value: rabbitmq
             - name: RabbitMq__Port
               value: "5672"
             - name: RabbitMq__Username
