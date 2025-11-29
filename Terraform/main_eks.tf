@@ -42,7 +42,7 @@ locals {
   eks_microservices_content = local.eks_enabled ? (
     var.k8s_microservices_manifest != null && var.k8s_microservices_manifest != "" ?
     var.k8s_microservices_manifest :
-    templatefile(local.eks_microservices_template_path, {
+    templatefile(local.eks_microservices_template_path, merge({
       namespace        = local.eks_namespace
       redis_image      = lookup(local.eks_images, "redis", "")
       rabbitmq_image   = lookup(local.eks_images, "rabbitmq", "")
@@ -59,21 +59,22 @@ locals {
       guest_resources      = local.eks_resources.guest
       user_resources       = local.eks_resources.user
       apigateway_resources = local.eks_resources.apigateway
-    })
+    }, local.rds_placeholder_map))
   ) : ""
 
-    eks_microservices_content_resolved = local.eks_enabled ? reduce(
-    keys(local.rds_placeholder_map),
-    local.eks_microservices_content,
-    lambda acc, k: replace(
-      acc,
-      k,
-      lookup(local.rds_placeholder_map, k, k)
-    )
-  ) : ""
+  # Use external data source to perform string replacements (simulating reduce)
+  eks_microservices_content_resolved = local.eks_enabled ? data.external.resolve_manifest[0].result["result"] : ""
 
+}
 
+data "external" "resolve_manifest" {
+  count   = local.eks_enabled ? 1 : 0
+  program = ["python", "${path.module}/scripts/resolve_placeholders.py"]
 
+  query = {
+    content           = local.eks_microservices_content
+    replacements_json = jsonencode(local.rds_placeholder_map)
+  }
 }
 
 module "eks" {
@@ -92,14 +93,14 @@ module "eks" {
     ecr_readonly = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
     ecr_ptc      = aws_iam_policy.ecs_task_ecr_ptc.arn
   }
-  node_min_size                   = 2
-  node_max_size                   = 4
-  node_desired_size               = 4
-  node_capacity_type              = "ON_DEMAND"
-  environment                     = "dev"
+  node_min_size                            = 2
+  node_max_size                            = 4
+  node_desired_size                        = 4
+  node_capacity_type                       = "ON_DEMAND"
+  environment                              = "dev"
   enable_cluster_creator_admin_permissions = true
-  create_cloudwatch_log_group     = false
-  cluster_addons                  = local.eks_cluster_addons
+  create_cloudwatch_log_group              = false
+  cluster_addons                           = local.eks_cluster_addons
 
   access_entries = {}
 }
@@ -175,11 +176,11 @@ resource "aws_iam_role_policy_attachment" "ebs_csi" {
 resource "aws_eks_addon" "ebs_csi" {
   count = local.eks_enabled ? 1 : 0
 
-  cluster_name             = module.eks[0].cluster_name
-  addon_name               = "aws-ebs-csi-driver"
+  cluster_name                = module.eks[0].cluster_name
+  addon_name                  = "aws-ebs-csi-driver"
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
-  service_account_role_arn = aws_iam_role.ebs_csi[0].arn
+  service_account_role_arn    = aws_iam_role.ebs_csi[0].arn
 
   depends_on = [
     aws_iam_role_policy_attachment.ebs_csi
@@ -187,9 +188,9 @@ resource "aws_eks_addon" "ebs_csi" {
 }
 
 locals {
-  eks_cluster_name      = local.eks_enabled ? module.eks[0].cluster_name : null
-  eks_cluster_endpoint  = local.eks_enabled ? module.eks[0].cluster_endpoint : "https://example.invalid"
-  eks_cluster_ca_data   = local.eks_enabled ? module.eks[0].cluster_certificate_authority_data : ""
+  eks_cluster_name     = local.eks_enabled ? module.eks[0].cluster_name : null
+  eks_cluster_endpoint = local.eks_enabled ? module.eks[0].cluster_endpoint : "https://example.invalid"
+  eks_cluster_ca_data  = local.eks_enabled ? module.eks[0].cluster_certificate_authority_data : ""
 }
 
 data "aws_eks_cluster_auth" "eks" {
