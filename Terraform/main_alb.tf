@@ -67,21 +67,21 @@ module "alb" {
   ]
 }
 
-locals {
-  eks_default_asg_name = var.use_eks ? try(module.eks[0].managed_node_groups["default"].node_group_autoscaling_group_names[0], null) : null
-}
-
 resource "aws_autoscaling_attachment" "alb_apigateway_eks" {
-  count = var.use_eks && local.eks_default_asg_name != null ? 1 : 0
+  count = var.use_eks ? 1 : 0
 
-  autoscaling_group_name = local.eks_default_asg_name
+  autoscaling_group_name = module.eks[0].managed_node_groups["default"].node_group_autoscaling_group_names[0]
   lb_target_group_arn    = module.alb.target_group_arns_map["apigateway"]
+
+  depends_on = [module.eks]
 }
 
 resource "aws_autoscaling_attachment" "alb_n8n_eks" {
-  count = var.use_eks && local.eks_default_asg_name != null ? 1 : 0
+  count = var.use_eks ? 1 : 0
 
-  autoscaling_group_name = local.eks_default_asg_name
+  autoscaling_group_name = module.eks[0].managed_node_groups["default"].node_group_autoscaling_group_names[0]
   lb_target_group_arn    = module.alb.target_group_arns_map["n8n"]
+
+  depends_on = [module.eks]
 }
 
