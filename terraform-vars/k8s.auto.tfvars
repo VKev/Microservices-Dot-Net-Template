@@ -106,15 +106,15 @@ spec:
             limits:
               cpu: 100m
               memory: 128Mi
-          command: ["sh", "-c", "exec redis-server --requirepass \"$REDIS_PASSWORD\""]
+          command: ['sh', '-c', 'exec redis-server --requirepass "$REDIS_PASSWORD"']
           livenessProbe:
             exec:
-              command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" ping"]
+              command: ['sh', '-c', 'redis-cli -a "$REDIS_PASSWORD" ping']
             initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             exec:
-              command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" ping"]
+              command: ['sh', '-c', 'redis-cli -a "$REDIS_PASSWORD" ping']
             initialDelaySeconds: 5
             periodSeconds: 10
           volumeMounts:
