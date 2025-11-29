@@ -66,7 +66,7 @@ locals {
     keys(local.rds_placeholder_map),
     local.eks_microservices_content,
     # Replace each TERRAFORM_RDS_* placeholder with its actual value from Terraform outputs
-    replace(accumulator, value, local.rds_placeholder_map[value])
+    lambda(acc, k, replace(acc, k, local.rds_placeholder_map[k]))
   ) : ""
 }
 
