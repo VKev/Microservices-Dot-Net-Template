@@ -296,6 +296,18 @@ spec:
               value: "false"
             - name: N8N_PATH
               value: "/n8n/"
+            - name: N8N_DB_TYPE
+              value: "postgresdb"
+            - name: N8N_DB_POSTGRESDB_HOST
+              value: TERRAFORM_RDS_HOST_USER_N8NDB
+            - name: N8N_DB_POSTGRESDB_PORT
+              value: TERRAFORM_RDS_PORT_USER_N8NDB
+            - name: N8N_DB_POSTGRESDB_DATABASE
+              value: TERRAFORM_RDS_DB_USER_N8NDB
+            - name: N8N_DB_POSTGRESDB_USER
+              value: TERRAFORM_RDS_USERNAME_USER_N8NDB
+            - name: N8N_DB_POSTGRESDB_PASSWORD
+              value: TERRAFORM_RDS_PASSWORD_USER_N8NDB
             - name: GENERIC_TIMEZONE
               value: "Asia/Ho_Chi_Minh"
             - name: TZ
@@ -508,17 +520,17 @@ spec:
             - name: ASPNETCORE_URLS
               value: http://+:5001
             - name: Database__Host
-              value: pg-1-database25811.g.aivencloud.com
+              value: TERRAFORM_RDS_HOST_GUEST_DEFAULTDB
             - name: Database__Port
-              value: "16026"
+              value: TERRAFORM_RDS_PORT_GUEST_DEFAULTDB
             - name: Database__Name
-              value: guestdb
+              value: TERRAFORM_RDS_DB_GUEST_DEFAULTDB
             - name: Database__Username
-              value: avnadmin
+              value: TERRAFORM_RDS_USERNAME_GUEST_DEFAULTDB
             - name: Database__Password
-              value: AVNS_iGi4kJJObNRnGdM6BTb
+              value: TERRAFORM_RDS_PASSWORD_GUEST_DEFAULTDB
             - name: Database__Provider
-              value: postgres
+              value: TERRAFORM_RDS_PROVIDER_GUEST_DEFAULTDB
             - name: RabbitMq__Host
               value: rabbit-mq
             - name: RabbitMq__Port
@@ -599,19 +611,19 @@ spec:
             - name: ASPNETCORE_URLS
               value: http://+:5002
             - name: Database__Host
-              value: pg-2-database25812.g.aivencloud.com
+              value: TERRAFORM_RDS_HOST_USER_DEFAULTDB
             - name: Database__Port
-              value: "19217"
+              value: TERRAFORM_RDS_PORT_USER_DEFAULTDB
             - name: Database__Name
-              value: userdb
+              value: TERRAFORM_RDS_DB_USER_DEFAULTDB
             - name: Database__Username
-              value: avnadmin
+              value: TERRAFORM_RDS_USERNAME_USER_DEFAULTDB
             - name: Database__Password
-              value: AVNS_vsIotPLRrxJUhcJlM0m
+              value: TERRAFORM_RDS_PASSWORD_USER_DEFAULTDB
             - name: Database__Provider
-              value: postgres
+              value: TERRAFORM_RDS_PROVIDER_USER_DEFAULTDB
             - name: Database__SslMode
-              value: Require
+              value: TERRAFORM_RDS_SSLMODE_USER_DEFAULTDB
             - name: RabbitMq__Host
               value: rabbit-mq
             - name: RabbitMq__Port

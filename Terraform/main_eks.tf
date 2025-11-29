@@ -61,6 +61,13 @@ locals {
       apigateway_resources = local.eks_resources.apigateway
     })
   ) : ""
+
+  eks_microservices_content_resolved = local.eks_enabled ? reduce(
+    keys(local.rds_placeholder_map),
+    local.eks_microservices_content,
+    # Replace each TERRAFORM_RDS_* placeholder with its actual value from Terraform outputs
+    lambda(acc, key, replace(acc, key, local.rds_placeholder_map[key]))
+  ) : ""
 }
 
 module "eks" {
@@ -209,7 +216,7 @@ provider "kubectl" {
 # 1) Đọc file YAML multi-doc
 data "kubectl_file_documents" "microservices" {
   count   = local.eks_enabled ? 1 : 0
-  content = local.eks_microservices_content
+  content = local.eks_microservices_content_resolved
 }
 
 resource "kubernetes_namespace" "microservices" {
