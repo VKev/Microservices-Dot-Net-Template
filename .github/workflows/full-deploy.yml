@@ -60,7 +60,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.6.6"
+          terraform_version: 1.9.8
 
       - name: Bootstrap S3 bucket and DynamoDB table
         working-directory: Terraform/bootstrap
@@ -233,7 +233,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.6.6"
+          terraform_version: 1.9.8
 
       - name: Write Terraform variables from secrets
         working-directory: Terraform

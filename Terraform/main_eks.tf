@@ -62,14 +62,16 @@ locals {
     })
   ) : ""
 
-    eks_microservices_content_resolved = (
-  local.eks_enabled ?
-  templatestring(
+    eks_microservices_content_resolved = local.eks_enabled ? reduce(
+    keys(local.rds_placeholder_map),
     local.eks_microservices_content,
-    local.rds_placeholder_map
-  ) :
-  ""
-)
+    lambda acc, k: replace(
+      acc,
+      k,
+      lookup(local.rds_placeholder_map, k, k)
+    )
+  ) : ""
+
 
 
 }
