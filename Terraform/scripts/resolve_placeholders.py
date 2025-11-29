@@ -6,30 +6,34 @@ def main():
         # Read JSON from stdin
         input_data = json.load(sys.stdin)
         
-        content = input_data.get("content", "")
+        docs_map_json = input_data.get("docs_map_json", "{}")
         replacements_json = input_data.get("replacements_json", "{}")
         
-        # Parse the replacements map
+        try:
+            docs_map = json.loads(docs_map_json)
+        except json.JSONDecodeError:
+            docs_map = {}
+
         try:
             replacements = json.loads(replacements_json)
         except json.JSONDecodeError:
-            # If parsing fails, return content as is or handle error
-            # For Terraform external data source, we should probably output the error or fail
-            # But let's try to be safe
             replacements = {}
 
-        # Perform replacements
-        # We iterate over the map. Order matters if keys are substrings of each other,
-        # but here keys are distinct TERRAFORM_RDS_...
-        for k, v in replacements.items():
-            if k and v:
-                content = content.replace(k, str(v))
+        results = {}
+        
+        # Perform replacements on each doc
+        for key, content in docs_map.items():
+            resolved_content = content
+            for k, v in replacements.items():
+                if k and v:
+                    resolved_content = resolved_content.replace(k, str(v))
+            results[key] = resolved_content
 
-        # Write result to stdout
-        json.dump({"result": content}, sys.stdout)
+        # Write result map to stdout
+        # Terraform external data source expects a flat map of strings
+        json.dump(results, sys.stdout)
         
     except Exception as e:
-        # Write error to stderr (Terraform will show it) and exit non-zero
         sys.stderr.write(str(e))
         sys.exit(1)
 

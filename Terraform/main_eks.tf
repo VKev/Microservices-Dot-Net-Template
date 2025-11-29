@@ -62,8 +62,9 @@ locals {
     }, local.rds_placeholder_map))
   ) : ""
 
-  # Use external data source to perform string replacements (simulating reduce)
-  eks_microservices_content_resolved = local.eks_enabled ? data.external.resolve_manifest[0].result["result"] : ""
+  # We use the raw content for parsing documents to ensure keys are known at plan time.
+  # The actual resolution happens via external data source on the individual documents.
+  eks_microservices_content_resolved = local.eks_microservices_content
 
 }
 
@@ -72,7 +73,10 @@ data "external" "resolve_manifest" {
   program = ["python", "${path.module}/scripts/resolve_placeholders.py"]
 
   query = {
-    content           = local.eks_microservices_content
+    docs_map_json = jsonencode({
+      for idx, doc in data.kubectl_file_documents.microservices[0].documents :
+      idx => doc
+    })
     replacements_json = jsonencode(local.rds_placeholder_map)
   }
 }
@@ -244,11 +248,12 @@ resource "kubectl_manifest" "microservices_prereq" {
     if contains(["Secret", "ConfigMap", "PersistentVolumeClaim", "Service"], try(yamldecode(doc).kind, ""))
   } : {}
 
-  yaml_body = each.value
+  yaml_body = data.external.resolve_manifest[0].result[each.key]
 
   depends_on = [
     module.eks,
-    kubernetes_namespace.microservices
+    kubernetes_namespace.microservices,
+    data.external.resolve_manifest
   ]
   provider = kubectl.eks
 }
@@ -261,12 +266,13 @@ resource "kubectl_manifest" "microservices_workloads" {
     if try(yamldecode(doc).kind, "") == "Deployment"
   } : {}
 
-  yaml_body = each.value
+  yaml_body = data.external.resolve_manifest[0].result[each.key]
 
   depends_on = [
     module.eks,
     kubernetes_namespace.microservices,
-    kubectl_manifest.microservices_prereq
+    kubectl_manifest.microservices_prereq,
+    data.external.resolve_manifest
   ]
   provider = kubectl.eks
 }
