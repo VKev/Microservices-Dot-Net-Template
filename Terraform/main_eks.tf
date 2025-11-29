@@ -62,12 +62,16 @@ locals {
     })
   ) : ""
 
-  eks_microservices_content_resolved = local.eks_enabled ? reduce(
-    keys(local.rds_placeholder_map),
+    eks_microservices_content_resolved = (
+  local.eks_enabled ?
+  templatestring(
     local.eks_microservices_content,
-    # Replace each TERRAFORM_RDS_* placeholder with its actual value from Terraform outputs
-    lambda(acc, k, replace(acc, k, lookup(local.rds_placeholder_map, k, k)))
-  ) : ""
+    local.rds_placeholder_map
+  ) :
+  ""
+)
+
+
 }
 
 module "eks" {
