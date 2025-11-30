@@ -2,15 +2,24 @@ import boto3
 import argparse
 import time
 import sys
+import datetime
 
-def wait_for_services(cluster, services, region):
+def wait_for_services(cluster, services, region, timeout_minutes=20):
     client = boto3.client('ecs', region_name=region)
     services_list = services.split(',')
     
     print(f"Waiting for services: {services_list} in cluster {cluster}...")
+    print(f"Timeout set to {timeout_minutes} minutes.")
+    
+    start_time = datetime.datetime.now()
+    timeout_delta = datetime.timedelta(minutes=timeout_minutes)
 
     # 1. Wait for services to exist and be ACTIVE
     while True:
+        if datetime.datetime.now() - start_time > timeout_delta:
+            print(f"TIMEOUT: Exceeded {timeout_minutes} minutes waiting for services to be ACTIVE.")
+            sys.exit(1)
+
         try:
             response = client.describe_services(cluster=cluster, services=services_list)
             found_services = {s['serviceName']: s for s in response['services']}
@@ -20,10 +29,7 @@ def wait_for_services(cluster, services, region):
             inactive = []
 
             for service_name in services_list:
-                # The service name in describe_services response might be the full ARN or just the name
-                # We check if we found a service definition that matches
                 service = found_services.get(service_name)
-                # Also check if the service name is part of the ARN if exact match failed
                 if not service:
                      for s in response['services']:
                          if s['serviceName'] == service_name or s['serviceArn'].endswith(f"/{service_name}"):
@@ -60,6 +66,10 @@ def wait_for_services(cluster, services, region):
     # 2. Wait for services to be stable (runningCount == desiredCount)
     print("Waiting for services to stabilize (runningCount == desiredCount)...")
     while True:
+        if datetime.datetime.now() - start_time > timeout_delta:
+            print(f"TIMEOUT: Exceeded {timeout_minutes} minutes waiting for services to stabilize.")
+            sys.exit(1)
+
         try:
             response = client.describe_services(cluster=cluster, services=services_list)
             unstable = []
@@ -68,9 +78,10 @@ def wait_for_services(cluster, services, region):
                 name = service['serviceName']
                 desired = service['desiredCount']
                 running = service['runningCount']
+                pending = service['pendingCount']
                 
                 if running < desired:
-                    unstable.append(f"{name} ({running}/{desired})")
+                    unstable.append(f"{name} (Running: {running}/{desired}, Pending: {pending})")
             
             if not unstable:
                 print("All dependency services are stable.")
@@ -88,6 +99,7 @@ if __name__ == "__main__":
     parser.add_argument('--cluster', required=True, help='ECS Cluster Name')
     parser.add_argument('--services', required=True, help='Comma-separated list of service names')
     parser.add_argument('--region', required=True, help='AWS Region')
+    parser.add_argument('--timeout', type=int, default=20, help='Timeout in minutes')
 
     args = parser.parse_args()
-    wait_for_services(args.cluster, args.services, args.region)
+    wait_for_services(args.cluster, args.services, args.region, args.timeout)
