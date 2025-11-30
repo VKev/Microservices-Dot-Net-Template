@@ -1,11 +1,17 @@
 output "ecs_service_names" {
   description = "Map of ECS service logical names to AWS ECS service names"
-  value       = { for name, svc in aws_ecs_service.this : name => svc.name }
+  value = merge(
+    { for name, svc in aws_ecs_service.this_no_deps : name => svc.name },
+    { for name, svc in aws_ecs_service.this_with_deps : name => svc.name }
+  )
 }
 
 output "ecs_service_arns" {
   description = "Map of ECS service logical names to ECS service ARNs"
-  value       = { for name, svc in aws_ecs_service.this : name => svc.id }
+  value = merge(
+    { for name, svc in aws_ecs_service.this_no_deps : name => svc.id },
+    { for name, svc in aws_ecs_service.this_with_deps : name => svc.id }
+  )
 }
 
 output "task_definition_arns" {
