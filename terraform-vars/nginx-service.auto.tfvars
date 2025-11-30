@@ -32,7 +32,7 @@ services = {
     ecs_container_image_repository_url = "936910352865.dkr.ecr.us-east-1.amazonaws.com/dockerhub/library/nginx"
     ecs_container_image_tag            = "1.27-alpine"
     ecs_container_cpu                  = 64
-    ecs_container_memory               = 128
+    ecs_container_memory               = 64
     ecs_container_essential            = true
     ecs_container_port_mappings = [
       {

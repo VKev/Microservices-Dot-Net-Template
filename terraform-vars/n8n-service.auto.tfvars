@@ -14,7 +14,7 @@ services = {
       healthy_threshold   = 2
       unhealthy_threshold = 3
     }
-    alb_listener_rule_priority = 15
+    alb_listener_rule_priority = null
     alb_listener_rule_conditions = [
       {
         path_pattern = {
@@ -33,7 +33,7 @@ services = {
     ecs_container_image_repository_url = "936910352865.dkr.ecr.us-east-1.amazonaws.com/dockerhub/n8nio/n8n"
     ecs_container_image_tag            = "latest"
     ecs_container_cpu                  = 512
-    ecs_container_memory               = 768
+    ecs_container_memory               = 512
     ecs_container_essential            = true
     ecs_container_port_mappings = [
       {
