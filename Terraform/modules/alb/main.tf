@@ -68,14 +68,14 @@ resource "aws_lb_target_group" "this" {
 
   health_check {
     enabled             = each.value.health_check.enabled
-    path                = each.value.health_check.path
+    path                = each.value.health_check.protocol == "TCP" ? null : each.value.health_check.path
     port                = each.value.health_check.port
     protocol            = each.value.health_check.protocol
     healthy_threshold   = each.value.health_check.healthy_threshold
     unhealthy_threshold = each.value.health_check.unhealthy_threshold
     interval            = each.value.health_check.interval
     timeout             = each.value.health_check.timeout
-    matcher             = each.value.health_check.matcher
+    matcher             = each.value.health_check.protocol == "TCP" ? null : each.value.health_check.matcher
   }
 
   tags = {
