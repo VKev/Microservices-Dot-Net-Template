@@ -1,3 +1,20 @@
+
+# EKS Cluster Configuration
+eks_cluster_version                          = "1.34"
+eks_cluster_endpoint_public_access           = true
+eks_cluster_endpoint_private_access          = true
+eks_node_instance_types                      = ["t3.small"]
+eks_node_min_size                            = 2
+eks_node_max_size                            = 5
+eks_node_desired_size                        = 4
+eks_node_capacity_type                       = "ON_DEMAND"
+environment                                  = "dev"
+eks_enable_cluster_creator_admin_permissions = true
+eks_create_cloudwatch_log_group              = false
+eks_default_storage_class_name               = "gp2"
+eks_ebs_volume_type                          = "gp3"
+
+
 k8s_resources = {
   storage_class = "gp3" # EBS CSI StorageClass created by Terraform
 

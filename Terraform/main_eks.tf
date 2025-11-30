@@ -1,12 +1,7 @@
 locals {
   eks_enabled   = var.use_eks
-  eks_namespace = "microservices"
+  eks_namespace = var.project_name
 
-  eks_microservices_template_path = abspath("${path.module}/../k8s/microservices.yaml")
-
-  k8s_overrides = try(var.k8s_resources, {})
-
-  eks_storage_class_default = "gp2"
   eks_cluster_addons = merge(
     {
       "vpc-cni" = {
@@ -22,44 +17,13 @@ locals {
     try(var.eks_cluster_addons, {})
   )
 
-  # Resources/replicas/images for each workload are fully provided via k8s.auto.tfvars (no defaults here)
-  eks_resources = local.k8s_overrides
-
   eks_storage_class = try(
-    local.k8s_overrides.storage_class,
-    try(local.k8s_overrides["storage_class"], local.eks_storage_class_default)
+    var.k8s_resources.storage_class,
+    try(var.k8s_resources["storage_class"], var.eks_default_storage_class_name)
   )
 
-  eks_images = local.eks_enabled ? {
-    redis      = "${var.services["redis"].ecs_container_image_repository_url}:${var.services["redis"].ecs_container_image_tag}"
-    rabbitmq   = "${var.services["rabbitmq"].ecs_container_image_repository_url}:${var.services["rabbitmq"].ecs_container_image_tag}"
-    n8n        = "${var.services["n8n"].ecs_container_image_repository_url}:${var.services["n8n"].ecs_container_image_tag}"
-    user       = "${var.services["user"].ecs_container_image_repository_url}:${var.services["user"].ecs_container_image_tag}"
-    guest      = "${var.services["guest"].ecs_container_image_repository_url}:${var.services["guest"].ecs_container_image_tag}"
-    apigateway = "${var.services["apigateway"].ecs_container_image_repository_url}:${var.services["apigateway"].ecs_container_image_tag}"
-  } : {}
-
   eks_microservices_content = local.eks_enabled ? (
-    var.k8s_microservices_manifest != null && var.k8s_microservices_manifest != "" ?
-    var.k8s_microservices_manifest :
-    templatefile(local.eks_microservices_template_path, merge({
-      namespace        = local.eks_namespace
-      redis_image      = lookup(local.eks_images, "redis", "")
-      rabbitmq_image   = lookup(local.eks_images, "rabbitmq", "")
-      n8n_image        = lookup(local.eks_images, "n8n", "")
-      user_image       = lookup(local.eks_images, "user", "")
-      guest_image      = lookup(local.eks_images, "guest", "")
-      apigateway_image = lookup(local.eks_images, "apigateway", "")
-      storage_class    = local.eks_storage_class
-
-      redis_resources      = local.eks_resources.redis
-      rabbitmq_resources   = local.eks_resources.rabbitmq
-      n8n_resources        = local.eks_resources.n8n
-      n8n_proxy_resources  = local.eks_resources.n8n_proxy
-      guest_resources      = local.eks_resources.guest
-      user_resources       = local.eks_resources.user
-      apigateway_resources = local.eks_resources.apigateway
-    }, local.rds_placeholder_map))
+    var.k8s_microservices_manifest != null ? var.k8s_microservices_manifest : ""
   ) : ""
 
   # We use the raw content for parsing documents to ensure keys are known at plan time.
@@ -92,18 +56,18 @@ module "eks" {
   cluster_version                 = var.eks_cluster_version
   cluster_endpoint_public_access  = var.eks_cluster_endpoint_public_access
   cluster_endpoint_private_access = var.eks_cluster_endpoint_private_access
-  node_instance_types             = ["t3.small"]
+  node_instance_types             = var.eks_node_instance_types
   node_iam_role_additional_policies = {
     ecr_readonly = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
     ecr_ptc      = aws_iam_policy.ecs_task_ecr_ptc.arn
   }
-  node_min_size                            = 2
-  node_max_size                            = 4
-  node_desired_size                        = 4
-  node_capacity_type                       = "ON_DEMAND"
-  environment                              = "dev"
-  enable_cluster_creator_admin_permissions = true
-  create_cloudwatch_log_group              = false
+  node_min_size                            = var.eks_node_min_size
+  node_max_size                            = var.eks_node_max_size
+  node_desired_size                        = var.eks_node_desired_size
+  node_capacity_type                       = var.eks_node_capacity_type
+  environment                              = var.environment
+  enable_cluster_creator_admin_permissions = var.eks_enable_cluster_creator_admin_permissions
+  create_cloudwatch_log_group              = var.eks_create_cloudwatch_log_group
   cluster_addons                           = local.eks_cluster_addons
 
   access_entries = {}
@@ -132,7 +96,7 @@ resource "kubernetes_storage_class_v1" "ebs_csi" {
   reclaim_policy      = "Delete"
   volume_binding_mode = "WaitForFirstConsumer"
   parameters = {
-    type      = "gp3"
+    type      = var.eks_ebs_volume_type
     encrypted = "true"
   }
 

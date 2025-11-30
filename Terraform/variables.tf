@@ -182,6 +182,66 @@ variable "eks_cluster_endpoint_private_access" {
   default     = true
 }
 
+variable "eks_node_instance_types" {
+  description = "List of instance types for the EKS managed node group."
+  type        = list(string)
+  default     = ["t3.small"]
+}
+
+variable "eks_node_min_size" {
+  description = "Minimum number of nodes in the EKS managed node group."
+  type        = number
+  default     = 2
+}
+
+variable "eks_node_max_size" {
+  description = "Maximum number of nodes in the EKS managed node group."
+  type        = number
+  default     = 3
+}
+
+variable "eks_node_desired_size" {
+  description = "Desired number of nodes in the EKS managed node group."
+  type        = number
+  default     = 4
+}
+
+variable "eks_node_capacity_type" {
+  description = "Capacity type for the EKS managed node group (ON_DEMAND or SPOT)."
+  type        = string
+  default     = "ON_DEMAND"
+}
+
+variable "environment" {
+  description = "Environment name (e.g., dev, prod)."
+  type        = string
+  default     = "dev"
+}
+
+variable "eks_enable_cluster_creator_admin_permissions" {
+  description = "Whether to grant admin permissions to the cluster creator."
+  type        = bool
+  default     = true
+}
+
+variable "eks_create_cloudwatch_log_group" {
+  description = "Whether to create a CloudWatch log group for the EKS cluster."
+  type        = bool
+  default     = false
+}
+
+variable "eks_default_storage_class_name" {
+  description = "Default storage class name for EKS (fallback if not specified in k8s_resources)."
+  type        = string
+  default     = "gp2"
+}
+
+variable "eks_ebs_volume_type" {
+  description = "EBS volume type for the CSI driver storage class (e.g., gp2, gp3, io1)."
+  type        = string
+  default     = "gp3"
+}
+
 variable "kubernete" {
   description = "Kubernetes deployment settings (used when use_eks = true)."
   type        = any
