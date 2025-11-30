@@ -180,7 +180,7 @@ resource "null_resource" "wait_for_dependencies" {
   }
 
   provisioner "local-exec" {
-    command = "python3 ${path.module}/../../scripts/wait_for_services.py --cluster ${var.ecs_cluster_name} --services ${join(",", each.value)} --region ${var.aws_region}"
+    command = "python3 ${path.module}/../../scripts/wait_for_services.py --cluster ${var.ecs_cluster_name} --services ${join(",", [for s in each.value : "${var.project_name}-${s}"])} --region ${var.aws_region}"
   }
 }
 
