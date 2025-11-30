@@ -29,7 +29,7 @@ module "alb" {
         unhealthy_threshold = service_config.alb_health_check.unhealthy_threshold
       }
     }
-    if service_config.alb_target_group_port != null
+    if service_config.alb_target_group_port != null || (var.use_eks && contains(["n8n", "apigateway"], service_name))
   ]
 
   # SSL/TLS Certificate Configuration
