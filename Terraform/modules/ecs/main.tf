@@ -186,12 +186,11 @@ resource "null_resource" "wait_for_dependencies" {
 
 
 
-resource "aws_ecs_service" "this" {
-  for_each = local.service_name_map
-
-  depends_on = [null_resource.wait_for_dependencies]
-
-
+resource "aws_ecs_service" "this_no_deps" {
+  for_each = {
+    for k, v in local.service_name_map : k => v
+    if length(lookup(var.service_dependencies, k, [])) == 0
+  }
 
   name                  = "${var.project_name}-${each.key}"
   cluster               = var.ecs_cluster_id
@@ -266,7 +265,89 @@ resource "aws_ecs_service" "this" {
       if dep != each.key
     }
   )
+}
 
+resource "aws_ecs_service" "this_with_deps" {
+  for_each = {
+    for k, v in local.service_name_map : k => v
+    if length(lookup(var.service_dependencies, k, [])) > 0
+  }
+
+  depends_on = [null_resource.wait_for_dependencies]
+
+  name                  = "${var.project_name}-${each.key}"
+  cluster               = var.ecs_cluster_id
+  task_definition       = aws_ecs_task_definition.this[each.key].arn
+  desired_count         = local.normalized_services[each.key].desired_count
+  launch_type           = "EC2"
+  wait_for_steady_state = var.wait_for_steady_state
+
+  network_configuration {
+    assign_public_ip = local.normalized_services[each.key].assign_public_ip
+    subnets          = var.task_subnet_ids
+    security_groups  = [var.shared_task_sg_id]
+  }
+
+  ordered_placement_strategy {
+    type  = "spread"
+    field = "attribute:ecs.instance-id"
+  }
+  dynamic "placement_constraints" {
+    for_each = local.normalized_services[each.key].placement_constraints
+    content {
+      type       = placement_constraints.value.type
+      expression = lookup(placement_constraints.value, "expression", null)
+    }
+  }
+
+  dynamic "service_connect_configuration" {
+    for_each = var.enable_service_connect && var.service_connect_namespace != null ? [1] : []
+    content {
+      enabled   = true
+      namespace = var.service_connect_namespace
+
+      dynamic "service" {
+        for_each = lookup(var.service_connect_services, each.key, [])
+        content {
+          port_name             = service.value.port_name
+          discovery_name        = service.value.discovery_name
+          ingress_port_override = try(service.value.ingress_port_override, null)
+
+          dynamic "client_alias" {
+            for_each = try(service.value.client_aliases, [])
+            content {
+              dns_name = client_alias.value.dns_name
+              port     = client_alias.value.port
+            }
+          }
+        }
+      }
+    }
+  }
+  dynamic "load_balancer" {
+    for_each = local.normalized_services[each.key].target_groups
+    content {
+      target_group_arn = load_balancer.value.target_group_arn
+      container_name   = load_balancer.value.container_name
+      container_port   = load_balancer.value.container_port
+    }
+  }
+
+  deployment_maximum_percent         = local.normalized_services[each.key].deployment_maximum_percent
+  deployment_minimum_healthy_percent = local.normalized_services[each.key].deployment_minimum_healthy_percent
+
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
+
+  tags = merge(
+    { Name = "${var.project_name}-${each.key}-ecs-service" },
+    {
+      for dep in lookup(var.service_dependencies, each.key, []) :
+      "tf_dep_${dep}" => "${var.project_name}-${dep}"
+      if dep != each.key
+    }
+  )
 }
 
 
@@ -275,7 +356,7 @@ resource "aws_appautoscaling_target" "ecs_target" {
 
   max_capacity       = each.value.max_capacity
   min_capacity       = each.value.min_capacity
-  resource_id        = "service/${var.ecs_cluster_name}/${aws_ecs_service.this[each.key].name}"
+  resource_id        = "service/${var.ecs_cluster_name}/${try(aws_ecs_service.this_no_deps[each.key].name, aws_ecs_service.this_with_deps[each.key].name)}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
