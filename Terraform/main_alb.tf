@@ -11,42 +11,25 @@ module "alb" {
   # When running on EKS, target groups need to register EC2 nodes (instance targets) on NodePorts.
   # For ECS, keep the original target types passed from service definitions.
   target_groups_definition = [
+    for service_name, service_config in var.services :
     {
-      # API Gateway Target Group
-      name_suffix = "apigateway"
-      port        = var.use_eks ? 32080 : var.services["apigateway"].alb_target_group_port
-      protocol    = var.services["apigateway"].alb_target_group_protocol
-      target_type = var.use_eks ? "instance" : var.services["apigateway"].alb_target_group_type
+      name_suffix = service_name
+      port        = var.use_eks ? (service_name == "apigateway" ? 32080 : (service_name == "n8n" ? 30578 : service_config.alb_target_group_port)) : service_config.alb_target_group_port
+      protocol    = service_config.alb_target_group_protocol
+      target_type = var.use_eks ? "instance" : service_config.alb_target_group_type
       health_check = {
-        enabled             = true
-        path                = "/api/health"
-        port                = var.use_eks ? "32080" : var.services["apigateway"].alb_health_check.port
-        protocol            = var.services["apigateway"].alb_health_check.protocol
-        matcher             = var.services["apigateway"].alb_health_check.matcher
-        interval            = var.services["apigateway"].alb_health_check.interval
-        timeout             = var.services["apigateway"].alb_health_check.timeout
-        healthy_threshold   = var.services["apigateway"].alb_health_check.healthy_threshold
-        unhealthy_threshold = var.services["apigateway"].alb_health_check.unhealthy_threshold
-      }
-    },
-    {
-      # n8n Target Group
-      name_suffix = "n8n"
-      port        = var.use_eks ? 30578 : var.services["n8n"].alb_target_group_port
-      protocol    = var.services["n8n"].alb_target_group_protocol
-      target_type = var.use_eks ? "instance" : var.services["n8n"].alb_target_group_type
-      health_check = {
-        enabled             = var.services["n8n"].alb_health_check.enabled
-        path                = var.services["n8n"].alb_health_check.path
-        port                = var.use_eks ? "30578" : var.services["n8n"].alb_health_check.port
-        protocol            = var.services["n8n"].alb_health_check.protocol
-        matcher             = var.services["n8n"].alb_health_check.matcher
-        interval            = var.services["n8n"].alb_health_check.interval
-        timeout             = var.services["n8n"].alb_health_check.timeout
-        healthy_threshold   = var.services["n8n"].alb_health_check.healthy_threshold
-        unhealthy_threshold = var.services["n8n"].alb_health_check.unhealthy_threshold
+        enabled             = service_config.alb_health_check.enabled
+        path                = service_config.alb_health_check.path
+        port                = var.use_eks ? (service_name == "apigateway" ? "32080" : (service_name == "n8n" ? "30578" : service_config.alb_health_check.port)) : service_config.alb_health_check.port
+        protocol            = service_config.alb_health_check.protocol
+        matcher             = service_config.alb_health_check.matcher
+        interval            = service_config.alb_health_check.interval
+        timeout             = service_config.alb_health_check.timeout
+        healthy_threshold   = service_config.alb_health_check.healthy_threshold
+        unhealthy_threshold = service_config.alb_health_check.unhealthy_threshold
       }
     }
+    if service_config.alb_target_group_port != null
   ]
 
   # SSL/TLS Certificate Configuration
@@ -59,11 +42,13 @@ module "alb" {
   }
 
   listener_rules_definition = [
+    for service_name, service_config in var.services :
     {
-      priority            = var.services["n8n"].alb_listener_rule_priority
-      target_group_suffix = "n8n"
-      conditions          = var.services["n8n"].alb_listener_rule_conditions
+      priority            = service_config.alb_listener_rule_priority
+      target_group_suffix = service_name
+      conditions          = service_config.alb_listener_rule_conditions
     }
+    if service_config.alb_listener_rule_priority != null
   ]
 }
 
