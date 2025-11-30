@@ -169,25 +169,12 @@ resource "aws_service_discovery_private_dns_namespace" "dns_ns" {
   tags        = { Name = "${var.project_name}-dns-namespace" }
 }
 
-resource "null_resource" "wait_for_dependencies" {
-  for_each = {
-    for k, v in var.service_dependencies : k => v
-    if length(v) > 0 && contains(var.service_names, k)
-  }
 
-  triggers = {
-    dependencies = join(",", each.value)
-  }
-
-  provisioner "local-exec" {
-    command = "python3 ${path.module}/../../scripts/wait_for_services.py --cluster ${var.ecs_cluster_name} --services ${join(",", [for s in each.value : "${var.project_name}-${s}"])} --region ${var.aws_region}"
-  }
-}
 
 resource "aws_ecs_service" "this" {
   for_each = local.service_name_map
 
-  depends_on = [null_resource.wait_for_dependencies]
+
 
   name                  = "${var.project_name}-${each.key}"
   cluster               = var.ecs_cluster_id
