@@ -14,8 +14,14 @@ services = {
       healthy_threshold   = 2
       unhealthy_threshold = 3
     }
-    alb_listener_rule_priority   = 12
-    alb_listener_rule_conditions = []
+    alb_listener_rule_priority = 12
+    alb_listener_rule_conditions = [
+      {
+        path_pattern = {
+          values = ["/api/guest", "/api/guest/*"]
+        }
+      }
+    ]
 
     ecs_service_connect_dns_name       = "guest-service"
     ecs_service_connect_discovery_name = "guest-service"

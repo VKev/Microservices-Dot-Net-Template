@@ -15,8 +15,14 @@ services = {
       healthy_threshold   = 2
       unhealthy_threshold = 3
     }
-    alb_listener_rule_priority   = 16
-    alb_listener_rule_conditions = []
+    alb_listener_rule_priority = 16
+    alb_listener_rule_conditions = [
+      {
+        path_pattern = {
+          values = ["/n8n", "/n8n/*"]
+        }
+      }
+    ]
 
     ecs_service_connect_dns_name       = "n8n-proxy"
     ecs_service_connect_discovery_name = "n8n-proxy"
