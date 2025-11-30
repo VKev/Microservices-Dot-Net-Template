@@ -17,10 +17,12 @@ module "rds" {
   port                    = each.value.port
   vpc_id                  = module.vpc.vpc_id
   subnet_ids              = module.vpc.private_subnet_ids
-  allowed_security_group_ids = compact([
+  allowed_security_group_ids = local.eks_enabled ? [
     aws_security_group.ecs_task_sg.id,
-    local.eks_enabled ? module.eks[0].node_security_group_id : ""
-  ])
+    module.eks[0].node_security_group_id
+    ] : [
+    aws_security_group.ecs_task_sg.id
+  ]
 
   tags = merge({
     Environment = "production"
