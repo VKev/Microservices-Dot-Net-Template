@@ -21,7 +21,7 @@ module "ecs_dynamic" {
 
   enable_auto_scaling    = var.enable_auto_scaling
   enable_service_connect = var.enable_service_connect
-  wait_for_steady_state  = true
+  wait_for_steady_state  = false
 
   shared_log_group_name     = aws_cloudwatch_log_group.ecs_logs.name
   shared_task_role_arn      = aws_iam_role.ecs_task_role.arn
