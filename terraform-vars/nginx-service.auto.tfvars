@@ -46,6 +46,49 @@ services = {
       retries     = 3
       startPeriod = 30
     }
+    command = [
+      "sh",
+      "-c",
+      <<-EOT
+cat <<'EOF' > /etc/nginx/conf.d/default.conf
+server {
+    listen 8088;
+    server_name _;
+    client_max_body_size 50m;
+
+    # Set real IP from CloudFront/ALB (support TERRAFORM_N8N_PROXY_DEPTH proxy hops)
+    set_real_ip_from 10.0.0.0/8;
+    real_ip_header X-Forwarded-For;
+    real_ip_recursive on;
+
+    location = /n8n {
+        return 301 /n8n/;
+    }
+
+    location /n8n/ {
+        proxy_pass http://127.0.0.1:5678/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Prefix /n8n/;
+        proxy_set_header X-Forwarded-Uri $request_uri;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_redirect off;
+        proxy_buffering off;
+    }
+
+    location / {
+        return 404;
+    }
+}
+EOF
+nginx -g 'daemon off;'
+EOT
+    ]
     depends_on = ["n8n"]
   }
 }

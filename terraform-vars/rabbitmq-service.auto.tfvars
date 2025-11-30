@@ -53,6 +53,12 @@ services = {
       retries     = 5
       startPeriod = 30
     }
+    mount_points = [
+      {
+        source_volume  = "rabbitmq-data"
+        container_path = "/var/lib/rabbitmq"
+      }
+    ]
     depends_on = []
   }
 }

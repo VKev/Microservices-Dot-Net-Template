@@ -14,7 +14,7 @@ services = {
       healthy_threshold   = 2
       unhealthy_threshold = 3
     }
-    alb_listener_rule_priority   = 15
+    alb_listener_rule_priority = 15
     alb_listener_rule_conditions = [
       {
         path_pattern = {
@@ -64,7 +64,10 @@ services = {
       { name = "N8N_TEMPLATES_ENABLED", value = "false" },
       { name = "N8N_METRICS", value = "true" },
       { name = "QUEUE_HEALTH_CHECK_ACTIVE", value = "true" },
-      { name = "NODE_OPTIONS", value = "--max-old-space-size=768" }
+      { name = "NODE_OPTIONS", value = "--max-old-space-size=768" },
+      { name = "N8N_EDITOR_BASE_URL", value = "TERRAFORM_PUBLIC_ENDPOINT/n8n/" },
+      { name = "WEBHOOK_URL", value = "TERRAFORM_PUBLIC_ENDPOINT/n8n/" },
+      { name = "VUE_APP_URL_BASE_API", value = "TERRAFORM_PUBLIC_ENDPOINT/n8n/" }
     ]
 
     ecs_container_health_check = {

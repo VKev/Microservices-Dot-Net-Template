@@ -334,6 +334,11 @@ variable "services" {
       retries     = number
       startPeriod = number
     }))
+    mount_points = optional(list(object({
+      source_volume  = string
+      container_path = string
+      read_only      = optional(bool, false)
+    })), [])
     depends_on              = optional(list(string)) # Container names this depends on
     command                 = optional(list(string))
     ecs_task_cpu            = optional(number)
@@ -344,6 +349,20 @@ variable "services" {
   }))
   sensitive = true
 
+}
+
+variable "ecs_service_groups" {
+  description = "Map of ECS service groups (Tasks/Services) and their constituent containers."
+  type = map(object({
+    desired_count = number
+    containers    = list(string) # Keys from var.services
+    volumes = optional(list(object({
+      name      = string
+      host_path = string
+    })), [])
+    dependencies = optional(list(string), []) # Keys from var.ecs_service_groups
+  }))
+  default = {}
 }
 
 variable "static_assets_bucket_domain_name" {

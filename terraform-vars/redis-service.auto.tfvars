@@ -48,6 +48,12 @@ services = {
       retries     = 5
       startPeriod = 30
     }
+    mount_points = [
+      {
+        source_volume  = "redis-data"
+        container_path = "/data"
+      }
+    ]
     depends_on = []
   }
 }

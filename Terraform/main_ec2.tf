@@ -10,27 +10,18 @@ module "ec2" {
   associate_public_ip   = var.associate_public_ip
   alb_security_group_id = module.alb.alb_sg_id
   container_instance_groups = {
-    server-1 = {
-      instance_attributes = { service_group = "server-1" }
-      tags                = { ServiceGroup = "server-1" }
-      user_data_extra     = <<-EOF
-        mkdir -p /var/lib/${var.project_name}/rabbitmq
-        mkdir -p /var/lib/${var.project_name}/redis
-        chown 999:999 /var/lib/${var.project_name}/rabbitmq || true
-        chown 999:999 /var/lib/${var.project_name}/redis || true
-        chmod 0775 /var/lib/${var.project_name}/rabbitmq || chmod 0777 /var/lib/${var.project_name}/rabbitmq
-        chmod 0775 /var/lib/${var.project_name}/redis || chmod 0777 /var/lib/${var.project_name}/redis
-      EOF
-    }
-    server-2 = {
-      instance_attributes = { service_group = "server-2" }
-      tags                = { ServiceGroup = "server-2" }
-      user_data_extra     = ""
-    }
-    server-3 = {
-      instance_attributes = { service_group = "server-3" }
-      tags                = { ServiceGroup = "server-3" }
-      user_data_extra     = ""
+    for group_name, group_config in var.ecs_service_groups :
+    group_name => {
+      instance_attributes = { service_group = group_name }
+      tags                = { ServiceGroup = group_name }
+      user_data_extra = join("\n", [
+        for vol in group_config.volumes :
+        <<-EOT
+          mkdir -p ${replace(vol.host_path, "TERRAFORM_PROJECT_NAME", var.project_name)}
+          chown 999:999 ${replace(vol.host_path, "TERRAFORM_PROJECT_NAME", var.project_name)} || true
+          chmod 0775 ${replace(vol.host_path, "TERRAFORM_PROJECT_NAME", var.project_name)} || chmod 0777 ${replace(vol.host_path, "TERRAFORM_PROJECT_NAME", var.project_name)}
+        EOT
+      ])
     }
   }
 
