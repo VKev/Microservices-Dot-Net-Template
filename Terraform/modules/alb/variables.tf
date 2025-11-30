@@ -53,7 +53,7 @@ variable "listener_rules_definition" {
   type = list(object({
     priority            = number
     target_group_suffix = string
-    conditions          = list(map(any))
+    conditions          = any
   }))
   default = []
 }

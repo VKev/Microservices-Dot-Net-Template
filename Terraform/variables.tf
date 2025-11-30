@@ -339,15 +339,9 @@ variable "services" {
       container_path = string
       read_only      = optional(bool, false)
     })), [])
-    depends_on              = optional(list(string)) # Container names this depends on
-    command                 = optional(list(string))
-    ecs_task_cpu            = optional(number)
-    ecs_task_memory         = optional(number)
-    ecs_desired_count       = optional(number)
     ecs_assign_public_ip    = optional(bool)
     ecs_enable_auto_scaling = optional(bool)
   }))
-  sensitive = true
 
 }
 
