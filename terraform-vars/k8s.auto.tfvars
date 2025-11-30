@@ -756,7 +756,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: api-gateway
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   type: NodePort
   selector:
