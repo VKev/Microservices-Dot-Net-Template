@@ -1,6 +1,6 @@
 services = {
   rabbitmq = {
-    alb_target_group_port     = 5672
+    alb_target_group_port     = null
     alb_target_group_protocol = "TCP"
     alb_target_group_type     = "instance"
     alb_health_check = {
@@ -14,7 +14,7 @@ services = {
       healthy_threshold   = 2
       unhealthy_threshold = 3
     }
-    alb_listener_rule_priority   = 14
+    alb_listener_rule_priority   = null
     alb_listener_rule_conditions = []
 
     ecs_service_connect_dns_name       = "rabbitmq"

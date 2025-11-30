@@ -25,11 +25,11 @@ services = {
     ecs_service_connect_dns_name       = "user-service"
     ecs_service_connect_discovery_name = "user-service"
     ecs_service_connect_port_name      = "user"
-    ecs_container_name_suffix          = "microservice"
+    ecs_container_name_suffix          = "user"
     ecs_container_image_repository_url = "936910352865.dkr.ecr.us-east-1.amazonaws.com/vkev2406-infrastructure-khanghv2406-infrastructure-khanghv2406-ecr"
     ecs_container_image_tag            = "User.Microservice-latest"
     ecs_container_cpu                  = 384
-    ecs_container_memory               = 384
+    ecs_container_memory               = 256
     ecs_container_essential            = true
     ecs_container_port_mappings = [
       {
@@ -50,11 +50,11 @@ services = {
       { name = "Database__Password", value = "TERRAFORM_RDS_PASSWORD_USER_DEFAULTDB" },
       { name = "Database__Provider", value = "TERRAFORM_RDS_PROVIDER_USER_DEFAULTDB" },
       { name = "Database__SslMode", value = "TERRAFORM_RDS_SSLMODE_USER_DEFAULTDB" },
-      { name = "RabbitMq__Host", value = "rabbitmq" }, # ECS Service Connect DNS
+      { name = "RabbitMq__Host", value = "localhost" }, # ECS Service Connect DNS
       { name = "RabbitMq__Port", value = "5672" },
       { name = "RabbitMq__Username", value = "rabbitmq" },
       { name = "RabbitMq__Password", value = "0Kg04Rq08!" },
-      { name = "Redis__Host", value = "redis" },
+      { name = "Redis__Host", value = "localhost" },
       { name = "Redis__Password", value = "0Kg04Rs05!" },
       { name = "Redis__Port", value = "6379" },
       { name = "Jwt__SecretKey", value = "YourSuperSecretKeyThatIsAtLeast32CharactersLong!@#$%^&*()" },

@@ -1,6 +1,6 @@
 services = {
   redis = {
-    alb_target_group_port     = 6379
+    alb_target_group_port     = null
     alb_target_group_protocol = "TCP"
     alb_target_group_type     = "ip"
     alb_health_check = {
@@ -14,7 +14,7 @@ services = {
       healthy_threshold   = 2
       unhealthy_threshold = 3
     }
-    alb_listener_rule_priority   = 13
+    alb_listener_rule_priority   = null
     alb_listener_rule_conditions = []
 
     ecs_service_connect_dns_name       = "redis"

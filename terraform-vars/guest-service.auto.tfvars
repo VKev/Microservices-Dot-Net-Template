@@ -26,11 +26,11 @@ services = {
     ecs_service_connect_dns_name       = "guest-service"
     ecs_service_connect_discovery_name = "guest-service"
     ecs_service_connect_port_name      = "guest"
-    ecs_container_name_suffix          = "microservice"
+    ecs_container_name_suffix          = "guest"
     ecs_container_image_repository_url = "936910352865.dkr.ecr.us-east-1.amazonaws.com/vkev2406-infrastructure-khanghv2406-infrastructure-khanghv2406-ecr"
     ecs_container_image_tag            = "Guest.Microservice-latest"
     ecs_container_cpu                  = 512
-    ecs_container_memory               = 512
+    ecs_container_memory               = 256
     ecs_container_essential            = true
     ecs_container_port_mappings = [
       {
