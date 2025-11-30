@@ -3,9 +3,9 @@ locals {
 }
 
 resource "random_password" "db_password" {
-  count   = var.password == "" ? 1 : 0
-  length  = 24
-  special = true
+  count            = var.password == "" ? 1 : 0
+  length           = 24
+  special          = true
   override_special = "!#$%&()*+,-.:;<=>?[]^_{|}~" # exclude '/', '@', '\"', and space
 }
 
@@ -24,16 +24,7 @@ resource "aws_security_group" "db" {
   description = "Access for ${var.identifier} database"
   vpc_id      = var.vpc_id
 
-  dynamic "ingress" {
-    for_each = var.allowed_security_group_ids
-    content {
-      description     = "DB access from allowed SG"
-      from_port       = var.port
-      to_port         = var.port
-      protocol        = "tcp"
-      security_groups = [ingress.value]
-    }
-  }
+
 
   egress {
     description = "All outbound"
@@ -47,6 +38,18 @@ resource "aws_security_group" "db" {
     Name    = "${var.project_name}-${var.identifier}-db-sg"
     Project = var.project_name
   }, var.tags)
+}
+
+resource "aws_security_group_rule" "ingress" {
+  count = length(var.allowed_security_group_ids)
+
+  type                     = "ingress"
+  description              = "DB access from allowed SG"
+  from_port                = var.port
+  to_port                  = var.port
+  protocol                 = "tcp"
+  source_security_group_id = var.allowed_security_group_ids[count.index]
+  security_group_id        = aws_security_group.db.id
 }
 
 resource "aws_db_instance" "this" {
