@@ -72,7 +72,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: redis-auth
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 type: Opaque
 stringData:
   redis-password: "0Kg04Rs05!"
@@ -81,7 +81,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: redis-data
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   storageClassName: gp3
   accessModes:
@@ -94,7 +94,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   replicas: 1
   selector:
@@ -146,7 +146,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: redis
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   type: NodePort
   selector:
@@ -160,7 +160,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: rabbitmq-auth
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 type: Opaque
 stringData:
   rabbitmq-username: "rabbitmq"
@@ -170,7 +170,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: rabbitmq-data
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   storageClassName: gp3
   accessModes:
@@ -183,7 +183,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rabbitmq
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   replicas: 1
   selector:
@@ -251,7 +251,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: rabbit-mq
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   type: NodePort
   selector:
@@ -270,7 +270,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: n8n-data
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   storageClassName: gp3
   accessModes:
@@ -283,7 +283,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: n8n
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   replicas: 1
   selector:
@@ -382,7 +382,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: n8n
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   type: ClusterIP
   selector:
@@ -395,7 +395,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: n8n-nginx-conf
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 data:
   nginx.conf: |
     user  nginx;
@@ -455,7 +455,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: n8n-proxy
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   replicas: 1
   selector:
@@ -491,7 +491,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: n8n-proxy
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   type: NodePort
   selector:
@@ -505,7 +505,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: guest-microservice
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   replicas: 1
   selector:
@@ -584,7 +584,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: guest-microservice
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   selector:
     app: guest-microservice
@@ -596,7 +596,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: user-microservice
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   replicas: 1
   selector:
@@ -683,7 +683,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: user-microservice
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   selector:
     app: user-microservice
@@ -695,7 +695,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api-gateway
-  namespace: microservices
+  namespace: TERRAFORM_NAMESPACE
 spec:
   replicas: 1
   selector:

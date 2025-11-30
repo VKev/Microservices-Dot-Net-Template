@@ -41,7 +41,12 @@ data "external" "resolve_manifest" {
       for idx, doc in data.kubectl_file_documents.microservices[0].documents :
       idx => doc
     })
-    replacements_json = jsonencode(local.rds_placeholder_map)
+    replacements_json = jsonencode(merge(
+      local.rds_placeholder_map,
+      {
+        "TERRAFORM_NAMESPACE" = local.eks_namespace
+      }
+    ))
   }
 }
 
