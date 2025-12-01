@@ -19,6 +19,8 @@ module "ecs_dynamic" {
     (each.key) = each.value.dependencies
   }
 
+  has_dependencies = length(each.value.dependencies) > 0
+
   enable_auto_scaling    = var.enable_auto_scaling
   enable_service_connect = var.enable_service_connect
   wait_for_steady_state  = false

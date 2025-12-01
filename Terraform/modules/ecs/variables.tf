@@ -92,6 +92,12 @@ variable "service_dependencies" {
   default     = {}
 }
 
+variable "has_dependencies" {
+  description = "Boolean flag to indicate if the service group has dependencies (avoids complex lookup logic inside module)"
+  type        = bool
+  default     = false
+}
+
 variable "enable_auto_scaling" {
   description = "Create target-tracking scaling policies for the service when enabled globally or per-service."
   type        = bool
