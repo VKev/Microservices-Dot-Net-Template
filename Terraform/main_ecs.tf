@@ -1,6 +1,42 @@
+locals {
+  # Build an explicit dependency graph between service groups so Terraform can order module creation.
+  ecs_service_dependency_edges = var.use_eks ? {} : {
+    for edge in flatten([
+      for name, cfg in var.ecs_service_groups : [
+        for dep in coalescelist(try(cfg.dependencies, []), []) : {
+          from = name
+          to   = dep
+        }
+      ]
+    ]) : "${edge.from}->${edge.to}" => edge
+    if contains(keys(var.ecs_service_groups), edge.to) && edge.from != edge.to
+  }
+}
+
+resource "null_resource" "ecs_service_dependency" {
+  for_each = local.ecs_service_dependency_edges
+
+  triggers = {
+    from = each.value.from
+    to   = each.value.to
+  }
+
+  # Ensure the dependency's ECS service module finishes before the dependent starts.
+  depends_on = [
+    module.ecs_dynamic[each.value.to]
+  ]
+}
+
 module "ecs_dynamic" {
   for_each = var.use_eks ? {} : var.ecs_service_groups
   source   = "./modules/ecs"
+
+  # Enforce module-level ordering based on the declared service group dependencies.
+  depends_on = [
+    for edge_key, edge in local.ecs_service_dependency_edges :
+    null_resource.ecs_service_dependency[edge_key]
+    if edge.from == each.key
+  ]
 
   project_name             = var.project_name
   aws_region               = var.aws_region
