@@ -262,6 +262,38 @@ resource "aws_ecs_service" "this_no_deps" {
   )
 }
 
+# Wait for dependency services to be stable before creating services with dependencies
+resource "null_resource" "wait_for_dependencies" {
+  for_each = {
+    for k, v in local.service_name_map : k => v
+    if var.has_dependencies && length(lookup(var.service_dependencies, k, [])) > 0
+  }
+
+  # Trigger re-execution if dependencies change
+  triggers = {
+    dependencies = join(",", [
+      for dep in lookup(var.service_dependencies, each.key, []) :
+      "${var.project_name}-${dep}"
+    ])
+    cluster = var.ecs_cluster_name
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      python ${path.module}/../../scripts/wait_for_services.py \
+        --cluster "${var.ecs_cluster_name}" \
+        --services "${join(",", [for dep in lookup(var.service_dependencies, each.key, []) : "${var.project_name}-${dep}"])}" \
+        --region "${var.aws_region}" \
+        --timeout 20
+    EOT
+  }
+
+  # Only depend on services without dependencies (they start first)
+  depends_on = [
+    aws_ecs_service.this_no_deps
+  ]
+}
+
 resource "aws_ecs_service" "this_with_deps" {
   for_each = {
     for k, v in local.service_name_map : k => v
@@ -344,6 +376,11 @@ resource "aws_ecs_service" "this_with_deps" {
       if dep != each.key
     }
   )
+
+  # Wait for dependency check to complete before creating this service
+  depends_on = [
+    null_resource.wait_for_dependencies
+  ]
 }
 
 resource "aws_appautoscaling_target" "ecs_target" {

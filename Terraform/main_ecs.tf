@@ -124,10 +124,4 @@ module "ecs_dynamic" {
       ]
     }
   }
-
-  # Explicit module-level dependencies based on service dependencies
-  depends_on = [
-    for dep in each.value.dependencies :
-    module.ecs_dynamic[dep]
-  ]
 }
