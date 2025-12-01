@@ -169,6 +169,15 @@ resource "aws_service_discovery_private_dns_namespace" "dns_ns" {
   tags        = { Name = "${var.project_name}-dns-namespace" }
 }
 
+resource "null_resource" "debug_dependencies" {
+  triggers = {
+    always_run = timestamp()
+  }
+  provisioner "local-exec" {
+    command = "echo 'DEBUG: service_dependencies for ${var.project_name} = ${jsonencode(var.service_dependencies)}'"
+  }
+}
+
 resource "null_resource" "wait_for_dependencies" {
   for_each = {
     for k, v in var.service_dependencies : k => v
