@@ -19,7 +19,7 @@ ecs_service_groups = {
     desired_count = 1
     containers    = ["n8n", "nginx"]
     volumes       = []
-    dependencies  = ["server-1"]
+    dependencies  = [""]
   }
 
   server-2 = {

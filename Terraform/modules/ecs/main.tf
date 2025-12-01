@@ -174,7 +174,12 @@ resource "null_resource" "debug_dependencies" {
     always_run = timestamp()
   }
   provisioner "local-exec" {
-    command = "echo 'DEBUG: service_dependencies for ${var.project_name} = ${jsonencode(var.service_dependencies)}'"
+    command = <<EOT
+      echo "DEBUG: project_name = ${var.project_name}"
+      echo "DEBUG: service_names = ${jsonencode(var.service_names)}"
+      echo "DEBUG: service_dependencies = ${jsonencode(var.service_dependencies)}"
+      echo "DEBUG: lookup check for ${var.service_names[0]} = ${length(lookup(var.service_dependencies, var.service_names[0], []))}"
+    EOT
   }
 }
 
