@@ -271,7 +271,7 @@ resource "aws_ecs_service" "this_with_deps" {
     if var.has_dependencies
   }
 
-  depends_on = [null_resource.wait_for_dependencies]
+
 
   name                  = "${var.project_name}-${each.key}"
   cluster               = var.ecs_cluster_id
@@ -339,7 +339,10 @@ resource "aws_ecs_service" "this_with_deps" {
   }
 
   tags = merge(
-    { Name = "${var.project_name}-${each.key}-ecs-service" },
+    {
+      Name                 = "${var.project_name}-${each.key}-ecs-service"
+      tf_dependency_waiter = null_resource.wait_for_dependencies[each.key].id
+    },
     {
       for dep in lookup(var.service_dependencies, each.key, []) :
       "tf_dep_${dep}" => "${var.project_name}-${dep}"
