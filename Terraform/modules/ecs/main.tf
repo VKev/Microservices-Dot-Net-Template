@@ -344,6 +344,12 @@ resource "aws_ecs_service" "this_with_deps" {
       if dep != each.key
     }
   )
+
+  depends_on = [
+    for dep in lookup(var.service_dependencies, each.key, []) :
+    aws_ecs_service.this_with_deps[dep]
+    if dep != each.key && contains(keys(local.service_name_map), dep)
+  ]
 }
 
 resource "aws_appautoscaling_target" "ecs_target" {
