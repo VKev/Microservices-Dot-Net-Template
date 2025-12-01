@@ -183,10 +183,10 @@ variable "service_names" {
   type        = list(string)
 }
 
-variable "upstream_dependency_waiter_ids" {
-  description = "Optional list of upstream dependency waiter IDs to enforce cross-service apply ordering."
-  type        = list(string)
-  default     = []
+variable "dependency_waiter_id" {
+  description = "Optional waiter ID (e.g. null_resource id) to enforce dependency ordering."
+  type        = string
+  default     = null
 }
 
 variable "log_retention_days" {

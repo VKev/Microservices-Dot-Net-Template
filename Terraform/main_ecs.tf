@@ -2,12 +2,8 @@ module "ecs_dynamic" {
   for_each = var.use_eks ? {} : var.ecs_service_groups
   source   = "./modules/ecs"
 
-  # Pass upstream waiter tokens so Terraform builds a DAG across service groups.
-  upstream_dependency_waiter_ids = [
-    for dep in coalescelist(try(each.value.dependencies, []), []) :
-    try(module.ecs_dynamic[dep].dependency_waiter_ids[dep], "")
-    if contains(keys(var.ecs_service_groups), dep)
-  ]
+  # Pass waiter ID to enforce ordering
+  dependency_waiter_id = null_resource.wait_for_dependencies[each.key].id
 
   project_name             = var.project_name
   aws_region               = var.aws_region
@@ -130,5 +126,23 @@ module "ecs_dynamic" {
         if var.services[container_name].alb_target_group_port != null
       ]
     }
+  }
+}
+
+resource "null_resource" "wait_for_dependencies" {
+  for_each = var.use_eks ? {} : var.ecs_service_groups
+
+  triggers = {
+    dependencies = join(",", each.value.dependencies)
+    # Re-run if any upstream waiter ID changes
+    upstream_waiter_ids = join(",", [
+      for dep in each.value.dependencies :
+      try(null_resource.wait_for_dependencies[dep].id, "")
+      if contains(keys(var.ecs_service_groups), dep)
+    ])
+  }
+
+  provisioner "local-exec" {
+    command = "python3 -u ${path.module}/scripts/wait_for_services.py --cluster ${try(module.ec2[0].ecs_cluster_name, "")} --services ${join(",", [for s in each.value.dependencies : "${var.project_name}-${s}"])} --region ${var.aws_region} --timeout 20"
   }
 }
