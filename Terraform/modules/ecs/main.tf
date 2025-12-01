@@ -66,6 +66,15 @@ locals {
   }
 
 
+
+}
+
+resource "null_resource" "debug_service_creation" {
+  for_each = local.service_name_map
+
+  provisioner "local-exec" {
+    command = "echo DEBUG: Starting creation of ECS service ${each.key} in project ${var.project_name}"
+  }
 }
 
 resource "aws_ecs_task_definition" "this" {
@@ -180,7 +189,7 @@ resource "aws_ecs_service" "this_no_deps" {
   task_definition       = aws_ecs_task_definition.this[each.key].arn
   desired_count         = local.normalized_services[each.key].desired_count
   launch_type           = "EC2"
-  wait_for_steady_state = var.wait_for_steady_state
+  wait_for_steady_state = true
 
   network_configuration {
     assign_public_ip = local.normalized_services[each.key].assign_public_ip
@@ -261,7 +270,7 @@ resource "aws_ecs_service" "this_with_deps" {
   task_definition       = aws_ecs_task_definition.this[each.key].arn
   desired_count         = local.normalized_services[each.key].desired_count
   launch_type           = "EC2"
-  wait_for_steady_state = var.wait_for_steady_state
+  wait_for_steady_state = true
 
   network_configuration {
     assign_public_ip = local.normalized_services[each.key].assign_public_ip
@@ -323,8 +332,7 @@ resource "aws_ecs_service" "this_with_deps" {
 
   tags = merge(
     {
-      Name                 = "${var.project_name}-${each.key}-ecs-service"
-      tf_dependency_waiter = var.dependency_waiter_id
+      Name = "${var.project_name}-${each.key}-ecs-service"
     },
     {
       for dep in lookup(var.service_dependencies, each.key, []) :

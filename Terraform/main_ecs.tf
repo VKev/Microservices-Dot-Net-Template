@@ -2,8 +2,10 @@ module "ecs_dynamic" {
   for_each = var.use_eks ? {} : var.ecs_service_groups
   source   = "./modules/ecs"
 
-  # Pass waiter ID to enforce ordering
-  dependency_waiter_id = null_resource.wait_for_dependencies[each.key].id
+  # Add explicit dependency management
+  depends_on = length(each.value.dependencies) > 0 ? [
+    for dep in each.value.dependencies : module.ecs_dynamic[dep]
+  ] : []
 
   project_name             = var.project_name
   aws_region               = var.aws_region
@@ -22,11 +24,11 @@ module "ecs_dynamic" {
     (each.key) = each.value.dependencies
   }
 
-  has_dependencies = length(each.value.dependencies) > 0
+  has_dependencies = false
 
   enable_auto_scaling    = var.enable_auto_scaling
   enable_service_connect = var.enable_service_connect
-  wait_for_steady_state  = false
+  wait_for_steady_state  = true
 
   shared_log_group_name     = aws_cloudwatch_log_group.ecs_logs.name
   shared_task_role_arn      = aws_iam_role.ecs_task_role.arn
@@ -126,17 +128,5 @@ module "ecs_dynamic" {
         if var.services[container_name].alb_target_group_port != null
       ]
     }
-  }
-}
-
-resource "null_resource" "wait_for_dependencies" {
-  for_each = var.use_eks ? {} : var.ecs_service_groups
-
-  triggers = {
-    dependencies = join(",", each.value.dependencies)
-  }
-
-  provisioner "local-exec" {
-    command = "python3 -u ${path.module}/scripts/wait_for_services.py --cluster ${try(module.ec2[0].ecs_cluster_name, "")} --services ${join(",", [for s in each.value.dependencies : "${var.project_name}-${s}"])} --region ${var.aws_region} --timeout 20"
   }
 }
