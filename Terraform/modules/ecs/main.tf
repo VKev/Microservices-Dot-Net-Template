@@ -366,13 +366,13 @@ resource "aws_ecs_service" "this_with_deps" {
       for dep in lookup(var.service_dependencies, each.key, []) :
       "tf_dep_${dep}" => "${var.project_name}-${dep}"
       if dep != each.key
-    }
+    },
+    # Create implicit dependency on THIS service's specific null_resource
+    # by referencing its id (only if it exists for this service)
+    length(lookup(var.service_dependencies, each.key, [])) > 0 ? {
+      "tf_wait_completed" = null_resource.wait_for_dependencies[each.key].id
+    } : {}
   )
-
-  # Wait for dependency check to complete before creating this service
-  depends_on = [
-    null_resource.wait_for_dependencies
-  ]
 }
 
 resource "aws_appautoscaling_target" "ecs_target" {
