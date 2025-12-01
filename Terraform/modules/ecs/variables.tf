@@ -183,8 +183,8 @@ variable "service_names" {
   type        = list(string)
 }
 
-variable "upstream_service_arns" {
-  description = "Optional list of upstream ECS service ARNs; used only to enforce cross-service apply ordering."
+variable "upstream_dependency_waiter_ids" {
+  description = "Optional list of upstream dependency waiter IDs to enforce cross-service apply ordering."
   type        = list(string)
   default     = []
 }

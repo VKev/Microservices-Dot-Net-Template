@@ -14,6 +14,11 @@ output "ecs_service_arns" {
   )
 }
 
+output "dependency_waiter_ids" {
+  description = "Map of dependency waiter null_resources keyed by service name"
+  value       = { for name, res in null_resource.wait_for_dependencies : name => res.id }
+}
+
 output "task_definition_arns" {
   description = "Map of ECS service logical names to task definition ARNs"
   value       = { for name, td in aws_ecs_task_definition.this : name => td.arn }

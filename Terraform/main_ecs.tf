@@ -2,10 +2,10 @@ module "ecs_dynamic" {
   for_each = var.use_eks ? {} : var.ecs_service_groups
   source   = "./modules/ecs"
 
-  # Reference upstream ECS services so Terraform builds an explicit dependency chain between service groups.
-  upstream_service_arns = [
+  # Pass upstream waiter tokens so Terraform builds a DAG across service groups.
+  upstream_dependency_waiter_ids = [
     for dep in coalescelist(try(each.value.dependencies, []), []) :
-    try(module.ecs_dynamic[dep].ecs_service_arns[dep], "")
+    try(module.ecs_dynamic[dep].dependency_waiter_ids[dep], "")
     if contains(keys(var.ecs_service_groups), dep)
   ]
 
