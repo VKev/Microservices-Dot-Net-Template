@@ -134,12 +134,6 @@ resource "null_resource" "wait_for_dependencies" {
 
   triggers = {
     dependencies = join(",", each.value.dependencies)
-    # Re-run if any upstream waiter ID changes
-    upstream_waiter_ids = join(",", [
-      for dep in each.value.dependencies :
-      try(null_resource.wait_for_dependencies[dep].id, "")
-      if contains(keys(var.ecs_service_groups), dep)
-    ])
   }
 
   provisioner "local-exec" {
