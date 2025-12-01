@@ -3,9 +3,9 @@ module "ecs_dynamic" {
   source   = "./modules/ecs"
 
   # Add explicit dependency management
-  depends_on = length(each.value.dependencies) > 0 ? [
+  depends_on = [
     for dep in each.value.dependencies : module.ecs_dynamic[dep]
-  ] : []
+  ]
 
   project_name             = var.project_name
   aws_region               = var.aws_region
