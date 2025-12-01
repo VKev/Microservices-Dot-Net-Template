@@ -183,6 +183,12 @@ variable "service_names" {
   type        = list(string)
 }
 
+variable "upstream_service_arns" {
+  description = "Optional list of upstream ECS service ARNs; used only to enforce cross-service apply ordering."
+  type        = list(string)
+  default     = []
+}
+
 variable "log_retention_days" {
   description = "Retention period for /ecs/<project> log group in CloudWatch."
   type        = number

@@ -176,7 +176,8 @@ resource "null_resource" "wait_for_dependencies" {
   }
 
   triggers = {
-    dependencies = join(",", each.value)
+    dependencies          = join(",", each.value)
+    upstream_service_arns = sha1(join(",", var.upstream_service_arns))
   }
 
   provisioner "local-exec" {
