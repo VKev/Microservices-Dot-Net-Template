@@ -22,7 +22,13 @@ def wait_for_services(cluster, services, region, timeout_minutes=20):
 
         try:
             response = client.describe_services(cluster=cluster, services=services_list)
+            
+            # Log failures if any
+            if response.get('failures'):
+                print(f"DEBUG: Failures reported: {response['failures']}")
+
             found_services = {s['serviceName']: s for s in response['services']}
+            print(f"DEBUG: Found services: {list(found_services.keys())}")
             
             all_active = True
             missing = []
@@ -31,6 +37,7 @@ def wait_for_services(cluster, services, region, timeout_minutes=20):
             for service_name in services_list:
                 service = found_services.get(service_name)
                 if not service:
+                     # Try to find by ARN suffix if name match failed
                      for s in response['services']:
                          if s['serviceName'] == service_name or s['serviceArn'].endswith(f"/{service_name}"):
                              service = s
@@ -41,6 +48,7 @@ def wait_for_services(cluster, services, region, timeout_minutes=20):
                     all_active = False
                     continue
                 
+                print(f"DEBUG: Service {service_name} status: {service['status']}")
                 if service['status'] != 'ACTIVE':
                     inactive.append(f"{service_name}({service['status']})")
                     all_active = False
