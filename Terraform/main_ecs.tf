@@ -2,11 +2,6 @@ module "ecs_dynamic" {
   for_each = var.use_eks ? {} : var.ecs_service_groups
   source   = "./modules/ecs"
 
-  # Add explicit dependency management
-  depends_on = [
-    for dep in each.value.dependencies : module.ecs_dynamic[dep]
-  ]
-
   project_name             = var.project_name
   aws_region               = var.aws_region
   vpc_id                   = module.vpc.vpc_id
@@ -24,7 +19,7 @@ module "ecs_dynamic" {
     (each.key) = each.value.dependencies
   }
 
-  has_dependencies = false
+  has_dependencies = length(each.value.dependencies) > 0
 
   enable_auto_scaling    = var.enable_auto_scaling
   enable_service_connect = var.enable_service_connect

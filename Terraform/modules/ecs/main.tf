@@ -247,6 +247,9 @@ resource "aws_ecs_service" "this_no_deps" {
 
   lifecycle {
     ignore_changes = [desired_count]
+    replace_triggered_by = [
+      aws_ecs_task_definition.this[each.key].arn
+    ]
   }
 
   tags = merge(
@@ -328,12 +331,13 @@ resource "aws_ecs_service" "this_with_deps" {
 
   lifecycle {
     ignore_changes = [desired_count]
+    replace_triggered_by = [
+      aws_ecs_task_definition.this[each.key].arn
+    ]
   }
 
   tags = merge(
-    {
-      Name = "${var.project_name}-${each.key}-ecs-service"
-    },
+    { Name = "${var.project_name}-${each.key}-ecs-service" },
     {
       for dep in lookup(var.service_dependencies, each.key, []) :
       "tf_dep_${dep}" => "${var.project_name}-${dep}"
