@@ -1,6 +1,7 @@
 locals {
   # Short, deterministic prefix to satisfy AWS name limits (<=32 chars for ALB/TG names).
-  alb_name_prefix = "${substr(replace(var.project_name, "_", "-"), 0, 18)}-${substr(md5(var.project_name), 0, 4)}"
+  # Max target group name length: prefix + "-tg-" + longest service key (~11 chars) < 32.
+  alb_name_prefix = "${substr(replace(var.project_name, "_", "-"), 0, 8)}-${substr(md5(var.project_name), 0, 4)}"
 }
 
 # ALB Module
