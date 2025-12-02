@@ -7,8 +7,8 @@ locals {
   n8n_service_connect_host = var.services["n8n"].ecs_service_connect_dns_name
   n8n_service_port         = var.services.n8n.ecs_container_port_mappings[0].container_port
 
-  # Public endpoint - use CloudFront HTTPS if enabled, otherwise ALB HTTP
-  public_endpoint = var.use_cloudfront_https ? "https://${module.cloudfront[0].cloudfront_domain_name}" : "http://${module.alb.alb_dns_name}"
+  # Public endpoint - use Cloudflare if enabled, then CloudFront if enabled, otherwise ALB HTTP
+  public_endpoint = var.use_cloudflare ? "https://${var.cloudflare_record_name == "@" ? var.cloudflare_domain : "${var.cloudflare_record_name}.${var.cloudflare_domain}"}" : (var.use_cloudfront_https ? "https://${module.cloudfront[0].cloudfront_domain_name}" : "http://${module.alb.alb_dns_name}")
 
   # Proxy depth for n8n - CloudFront adds one more hop (CloudFront -> ALB -> Container)
   # Without CloudFront: 1 (ALB -> Container)
@@ -248,7 +248,7 @@ resource "aws_service_discovery_private_dns_namespace" "ecs_namespace" {
 resource "aws_secretsmanager_secret" "dockerhub" {
   count = var.dockerhub_credentials_secret_arn == null && var.dockerhub_username != "" && var.dockerhub_password != "" ? 1 : 0
   # New name to force recreation with valid JSON credentials
-  name  = "ecr-pullthroughcache/${var.dockerhub_pull_through_prefix}-${var.project_name}-creds"
+  name = "ecr-pullthroughcache/${var.dockerhub_pull_through_prefix}-${var.project_name}-creds"
 
   recovery_window_in_days = 0
 }
@@ -259,7 +259,7 @@ resource "aws_secretsmanager_secret_version" "dockerhub" {
 
   secret_string = jsonencode({
     username    = var.dockerhub_username
-    accessToken = var.dockerhub_password  # this should be your Docker Hub access token
+    accessToken = var.dockerhub_password # this should be your Docker Hub access token
   })
 }
 

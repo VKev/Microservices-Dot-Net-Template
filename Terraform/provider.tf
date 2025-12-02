@@ -4,7 +4,7 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.87"
     }
-     kubernetes = {
+    kubernetes = {
       source  = "hashicorp/kubernetes"
       version = "~> 2.29"
     }
@@ -19,6 +19,10 @@ terraform {
     random = {
       source  = "hashicorp/random"
       version = "~> 3.6"
+    }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
     }
   }
 

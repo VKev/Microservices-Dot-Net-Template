@@ -140,6 +140,37 @@ variable "use_cloudfront_https" {
   default     = true
 }
 
+variable "use_cloudflare" {
+  description = "Whether to use Cloudflare for DNS and HTTPS. Prioritized over CloudFront if both are true."
+  type        = bool
+  default     = false
+}
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare API Token for managing DNS records."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "cloudflare_zone_id" {
+  description = "Cloudflare Zone ID where the domain is managed."
+  type        = string
+  default     = ""
+}
+
+variable "cloudflare_domain" {
+  description = "The domain name managed in Cloudflare (e.g., example.com)."
+  type        = string
+  default     = ""
+}
+
+variable "cloudflare_record_name" {
+  description = "The subdomain/record name to create (e.g., api, www, or @)."
+  type        = string
+  default     = "@"
+}
+
 variable "use_eks" {
   description = "When true, deploy workloads to EKS instead of ECS."
   type        = bool
