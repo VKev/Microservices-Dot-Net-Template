@@ -1,9 +1,15 @@
+locals {
+  # Short, deterministic prefix to satisfy AWS name limits (<=32 chars for ALB/TG names).
+  alb_name_prefix = "${substr(replace(var.project_name, "_", "-"), 0, 18)}-${substr(md5(var.project_name), 0, 4)}"
+}
+
 # ALB Module
 module "alb" {
-  source            = "./modules/alb"
-  project_name      = var.project_name
-  vpc_id            = module.vpc.vpc_id
-  public_subnet_ids = module.vpc.public_subnet_ids
+  source                = "./modules/alb"
+  project_name          = var.project_name
+  resource_name_prefix  = local.alb_name_prefix
+  vpc_id                = module.vpc.vpc_id
+  public_subnet_ids     = module.vpc.public_subnet_ids
   # NodePorts exposed by the EKS services (only used when var.use_eks = true)
   # API Gateway NodePort: 32080
   # n8n proxy NodePort:   30578

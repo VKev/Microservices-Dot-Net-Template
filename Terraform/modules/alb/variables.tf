@@ -3,6 +3,11 @@ variable "project_name" {
   type        = string
 }
 
+variable "resource_name_prefix" {
+  description = "Short, deterministic prefix for AWS resource names to satisfy length limits."
+  type        = string
+}
+
 variable "vpc_id" {
   description = "ID of the VPC where the ALB and target groups are created."
   type        = string

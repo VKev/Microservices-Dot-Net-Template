@@ -3,6 +3,12 @@ variable "project_name" {
   description = "Project name, used as EKS cluster prefix"
 }
 
+variable "name_prefix" {
+  type        = string
+  description = "Short prefix used for cluster and IAM names to satisfy AWS length limits"
+  default     = null
+}
+
 variable "vpc_id" {
   type        = string
   description = "VPC ID where EKS will be created"

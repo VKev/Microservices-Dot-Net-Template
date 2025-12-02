@@ -10,7 +10,7 @@ locals {
 }
 
 resource "aws_security_group" "alb_sg" {
-  name_prefix = "${var.project_name}-alb-sg-" # Added trailing hyphen for better readability if name_prefix truncates
+  name_prefix = "${var.resource_name_prefix}-alb-sg-" # Added trailing hyphen for better readability if name_prefix truncates
   vpc_id      = var.vpc_id
   description = "ALB Security Group allowing public HTTP/HTTPS access"
 
@@ -39,12 +39,12 @@ resource "aws_security_group" "alb_sg" {
   }
 
   tags = {
-    Name = "${var.project_name}-alb-sg"
+    Name = "${var.resource_name_prefix}-alb-sg"
   }
 }
 
 resource "aws_lb" "this" {
-  name               = "${var.project_name}-alb"
+  name               = "${var.resource_name_prefix}-alb"
   internal           = false # Assuming public-facing, change if internal
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
@@ -53,14 +53,14 @@ resource "aws_lb" "this" {
   enable_deletion_protection = false # Consider setting to true for production
 
   tags = {
-    Name = "${var.project_name}-alb"
+    Name = "${var.resource_name_prefix}-alb"
   }
 }
 
 resource "aws_lb_target_group" "this" {
   for_each = { for tg_conf in var.target_groups_definition : tg_conf.name_suffix => tg_conf }
 
-  name        = "${var.project_name}-tg-${each.key}" # each.key is tg_conf.name_suffix
+  name        = "${var.resource_name_prefix}-tg-${each.key}" # each.key is tg_conf.name_suffix
   port        = each.value.port
   protocol    = each.value.protocol
   target_type = each.value.target_type
@@ -79,7 +79,7 @@ resource "aws_lb_target_group" "this" {
   }
 
   tags = {
-    Name    = "${var.project_name}-tg-${each.key}"
+    Name    = "${var.resource_name_prefix}-tg-${each.key}"
     Project = var.project_name
   }
 
@@ -121,7 +121,7 @@ resource "aws_lb_listener" "http" {
   }
 
   tags = {
-    Name = "${var.project_name}-alb-http-listener"
+    Name = "${var.resource_name_prefix}-alb-http-listener"
   }
 }
 
@@ -150,7 +150,7 @@ resource "aws_lb_listener" "https" {
   }
 
   tags = {
-    Name = "${var.project_name}-alb-https-listener"
+    Name = "${var.resource_name_prefix}-alb-https-listener"
   }
 }
 
@@ -191,7 +191,7 @@ resource "aws_lb_listener_rule" "http_rules" {
   }
 
   tags = {
-    Name     = "${var.project_name}-http-listener-rule-${each.value.priority}-${each.value.target_group_suffix}"
+    Name     = "${var.resource_name_prefix}-http-listener-rule-${each.value.priority}-${each.value.target_group_suffix}"
     Priority = each.value.priority
   }
 }
@@ -233,7 +233,7 @@ resource "aws_lb_listener_rule" "https_rules" {
   }
 
   tags = {
-    Name     = "${var.project_name}-https-listener-rule-${each.value.priority}-${each.value.target_group_suffix}"
+    Name     = "${var.resource_name_prefix}-https-listener-rule-${each.value.priority}-${each.value.target_group_suffix}"
     Priority = each.value.priority
   }
 }

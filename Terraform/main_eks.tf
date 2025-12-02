@@ -1,6 +1,7 @@
 locals {
   eks_enabled   = var.use_eks
   eks_namespace = var.project_name
+  eks_name_prefix = "${substr(replace(var.project_name, "_", "-"), 0, 18)}-${substr(md5(var.project_name), 0, 4)}"
 
   eks_cluster_addons = merge(
     {
@@ -55,6 +56,7 @@ module "eks" {
   source = "./modules/eks"
 
   project_name       = var.project_name
+  name_prefix        = local.eks_name_prefix
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnet_ids
 

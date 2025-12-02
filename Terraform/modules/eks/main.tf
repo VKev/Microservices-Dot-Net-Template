@@ -1,10 +1,14 @@
+locals {
+  eks_name_prefix = coalesce(var.name_prefix, var.project_name)
+}
+
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.0"
 
   # Tên & version cluster – theo doc EKS khuyến nghị dùng
   # phiên bản Kubernetes mới nhất trong standard support
-  cluster_name    = "${var.project_name}-eks"
+  cluster_name    = "${local.eks_name_prefix}-eks"
   cluster_version = var.cluster_version
 
   # Network – EKS standard: control plane + managed node group trong VPC riêng
