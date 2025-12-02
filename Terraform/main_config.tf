@@ -278,7 +278,7 @@ resource "aws_ecr_pull_through_cache_rule" "dockerhub" {
 
 # CloudFront Module (Optional - for free HTTPS)
 module "cloudfront" {
-  count  = var.use_cloudfront_https ? 1 : 0
+  count  = var.use_cloudflare ? 0 : (var.use_cloudfront_https ? 1 : 0)
   source = "./modules/cloudfront"
 
   project_name   = var.project_name
