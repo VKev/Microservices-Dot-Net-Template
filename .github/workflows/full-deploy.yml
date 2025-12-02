@@ -66,8 +66,8 @@ jobs:
         working-directory: Terraform/bootstrap
         run: |
           terraform init
-          terraform plan -var="project_name=${{ env.PROJECT_NAME }}" -var="region=${{ env.AWS_REGION }}"
-          terraform apply -auto-approve -var="project_name=${{ env.PROJECT_NAME }}" -var="region=${{ env.AWS_REGION }}"
+          terraform plan -var="project_name=${PROJECT_NAME}" -var="region=${AWS_REGION}"
+          terraform apply -auto-approve -var="project_name=${PROJECT_NAME}" -var="region=${AWS_REGION}"
 
   # Step 2: Discover and Build Microservices
   discover-services:
@@ -353,11 +353,19 @@ jobs:
       - name: Terraform Init
         working-directory: Terraform
         run: |
+          BUCKET="${PROJECT_NAME}-${AWS_REGION}-terraform-state"
+          TABLE="${PROJECT_NAME}-${AWS_REGION}-terraform-locks"
+
+          echo "Using backend bucket: ${BUCKET}"
+          echo "Using backend table:  ${TABLE}"
+
           terraform init \
-            -backend-config="bucket=${{ env.PROJECT_NAME }}-${{ env.AWS_REGION }}-terraform-state" \
-            -backend-config="key=terraform.tfstate" \
-            -backend-config="region=${{ env.AWS_REGION }}" \
-            -backend-config="dynamodb_table=${{ env.PROJECT_NAME }}-${{ env.AWS_REGION }}-terraform-locks"
+            -backend-config="bucket=${BUCKET}" \
+            -backend-config="key=terraform/state.tfstate" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="dynamodb_table=${TABLE}" \
+            -backend-config="encrypt=true" \
+            -input=false
 
       - name: Terraform Validate
         working-directory: Terraform

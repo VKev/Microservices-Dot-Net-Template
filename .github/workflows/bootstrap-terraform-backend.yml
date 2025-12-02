@@ -59,7 +59,7 @@ jobs:
           TF_VAR_region: ${{ env.AWS_REGION }}
           TF_VAR_project_name: ${{ env.PROJECT_NAME }}
         run: |
-          terraform plan -input=false -out=tfplan
+          terraform plan -input=false -out=tfplan -var="project_name=${PROJECT_NAME}" -var="region=${AWS_REGION}"
 
       - name: Apply
         if: ${{ steps.plan.outcome == 'success' }}
