@@ -22,7 +22,7 @@ resource "cloudflare_record" "static_assets" {
   count   = var.use_cloudflare && var.static_assets_bucket_domain_name != "" ? 1 : 0
   zone_id = var.cloudflare_zone_id
   name    = local.static_record_name
-  value   = var.static_assets_bucket_domain_name
+  content = var.static_assets_bucket_domain_name
   type    = "CNAME"
   proxied = true
   ttl     = 1 # Auto
