@@ -12,10 +12,11 @@ resource "cloudflare_record" "alb_cname" {
   count   = var.use_cloudflare ? 1 : 0
   zone_id = var.cloudflare_zone_id
   name    = var.cloudflare_record_name
-  value   = local.cloudflare_origin
+  content = local.cloudflare_origin
   type    = "CNAME"
   proxied = true
   ttl     = 1 # Auto
+  allow_overwrite = true
 }
 
 resource "cloudflare_record" "static_assets" {
@@ -26,4 +27,5 @@ resource "cloudflare_record" "static_assets" {
   type    = "CNAME"
   proxied = true
   ttl     = 1 # Auto
+  allow_overwrite = true
 }
