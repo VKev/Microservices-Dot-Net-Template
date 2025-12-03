@@ -217,8 +217,22 @@ app.UseSwagger(c =>
     c.PreSerializeFilters.Add((swagger, httpReq) =>
     {
         var proto = httpReq.Headers["CloudFront-Forwarded-Proto"].FirstOrDefault()
-                    ?? httpReq.Headers["X-Forwarded-Proto"].FirstOrDefault()
-                    ?? httpReq.Scheme;
+                    ?? httpReq.Headers["X-Forwarded-Proto"].FirstOrDefault();
+
+        if (string.IsNullOrWhiteSpace(proto))
+        {
+            var cfVisitor = httpReq.Headers["CF-Visitor"].FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(cfVisitor))
+            {
+                var schemeVal = cfVisitor.Split('"').FirstOrDefault(s => s.Equals("https", StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrWhiteSpace(schemeVal))
+                {
+                    proto = schemeVal;
+                }
+            }
+        }
+
+        proto ??= httpReq.Scheme;
 
         var host = httpReq.Headers["Host"].FirstOrDefault()
                    ?? httpReq.Host.Value;
