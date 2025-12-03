@@ -19,6 +19,16 @@ resource "cloudflare_record" "alb_cname" {
   allow_overwrite = true
 }
 
+resource "cloudflare_zone_settings_override" "zone_ssl_mode" {
+  count   = var.use_cloudflare ? 1 : 0
+  zone_id = var.cloudflare_zone_id
+
+  settings {
+    # Keep origin HTTP (ALB listener on 80) by forcing Cloudflare to use Flexible SSL toward origin.
+    ssl = "flexible"
+  }
+}
+
 resource "cloudflare_record" "static_assets" {
   count   = var.use_cloudflare && var.static_assets_bucket_domain_name != "" ? 1 : 0
   zone_id = var.cloudflare_zone_id
