@@ -40,7 +40,7 @@ module "alb" {
   ]
 
   # SSL/TLS Certificate Configuration
-  certificate_arn       = var.certificate_arn
+  certificate_arn       = local.effective_certificate_arn
   enable_https_redirect = var.enable_https_redirect
 
   default_listener_action = {
