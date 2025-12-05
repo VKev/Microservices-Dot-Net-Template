@@ -7,6 +7,10 @@ module "acm" {
 
   source = "./modules/acm"
 
+  providers = {
+    aws = aws
+  }
+
   domain_name               = var.domain_name
   subject_alternative_names = []
   cloudflare_zone_id        = var.cloudflare_zone_id

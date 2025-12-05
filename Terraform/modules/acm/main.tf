@@ -1,10 +1,4 @@
-provider "aws" {
-  alias  = "acm"
-  region = var.aws_region
-}
-
 resource "aws_acm_certificate" "this" {
-  provider                  = aws.acm
   domain_name               = var.domain_name
   subject_alternative_names = var.subject_alternative_names
   validation_method         = "DNS"
@@ -41,7 +35,6 @@ resource "cloudflare_record" "acm_validation" {
 }
 
 resource "aws_acm_certificate_validation" "this" {
-  provider                 = aws.acm
   certificate_arn         = aws_acm_certificate.this.arn
   validation_record_fqdns = [for record in local.validation_records : record.name]
 

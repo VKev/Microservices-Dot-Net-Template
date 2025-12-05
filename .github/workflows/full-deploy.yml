@@ -83,6 +83,12 @@ jobs:
             [ "$f" = "00-all.auto.tfvars.json" ] && continue || true
             rm -f "$f" || true
           done
+          echo "Merged files:"
+          ls -1 *.auto.tfvars* 2>/dev/null || true
+          echo "Merged files:"
+          ls -1 *.auto.tfvars* 2>/dev/null || true
+          echo "Merged files:"
+          ls -1 *.auto.tfvars* 2>/dev/null || true
 
       - name: Load project/region from Terraform vars
         working-directory: Terraform
