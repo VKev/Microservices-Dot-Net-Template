@@ -11,24 +11,9 @@ on:
       action:
         description: "Terraform action to perform"
         type: choice
-        options: [plan, apply]
-        default: plan
+        options: [plan, apply, destroy]
+        default: apply
         required: true
-      domain_name:
-        description: "Root domain for the ACM cert (e.g., vkev.me). Uses repo/env var ACM_DOMAIN_NAME when empty."
-        type: string
-        default: ""
-        required: false
-      subject_alternative_names:
-        description: "JSON list of SANs (e.g., [\"*.vkev.me\"]). Uses repo/env var ACM_SANS when empty."
-        type: string
-        default: ""
-        required: false
-      cloudflare_zone_id:
-        description: "Cloudflare Zone ID. Uses repo/env var CLOUDFLARE_ZONE_ID when empty."
-        type: string
-        default: ""
-        required: false
 
 permissions:
   contents: read
@@ -36,9 +21,9 @@ permissions:
 env:
   AWS_REGION: ""
   PROJECT_NAME: ""
-  ACM_DOMAIN_NAME: ${{ inputs.domain_name || vars.ACM_DOMAIN_NAME || '' }}
-  ACM_SANS: ${{ inputs.subject_alternative_names || vars.ACM_SANS || '[]' }}
-  CLOUDFLARE_ZONE_ID: ${{ inputs.cloudflare_zone_id || vars.CLOUDFLARE_ZONE_ID || '' }}
+  ACM_DOMAIN_NAME: ""
+  ACM_SANS: "[]"
+  CLOUDFLARE_ZONE_ID: ""
 
 jobs:
   acm:
@@ -50,11 +35,79 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Load project/region from Terraform vars
+      - name: Write Terraform variables from secrets (merge)
+        working-directory: Terraform
+        env:
+          SECRETS_JSON: ${{ toJson(secrets) }}
+        run: |
+          set -euo pipefail
+
+          # Bring repo-provided defaults (both private and sanitized) into working dir
+          cp ../terraform-vars/*.auto.tfvars . 2>/dev/null || true
+          cp ../Terraform-vars/*.auto.tfvars . 2>/dev/null || true
+
+          # Ensure jq
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y jq
+          fi
+
+          echo "Found TERRAFORM_VARS_* secrets:"
+          echo "$SECRETS_JSON" \
+            | jq -r 'to_entries[] | select(.key | startswith("TERRAFORM_VARS_")) | .key' \
+            | sort
+          echo ""
+
+          # Create .auto.tfvars files from secrets (JSON vs HCL)
+          echo "$SECRETS_JSON" \
+            | jq -r 'to_entries[] | select(.key | startswith("TERRAFORM_VARS_")) | .key' \
+            | while read -r key; do
+                suffix=${key#TERRAFORM_VARS_}
+                norm=$(echo "$suffix" \
+                  | tr '[:upper:]' '[:lower:]' \
+                  | sed 's/^\s\+//;s/\s\+$//' \
+                  | tr ' /\\' '___' )
+                value=$(jq -r --arg k "$key" '.[$k]' <<< "$SECRETS_JSON")
+                if echo "$value" | jq -e . >/dev/null 2>&1; then
+                  case "$norm" in
+                    *.auto.tfvars.json|*.tfvars.json) filename="$norm";;
+                    *.auto.tfvars|*.tfvars)           filename="$norm.json";;
+                    *)                                 filename="$norm.auto.tfvars.json";;
+                  esac
+                  printf '%s' "$value" > "$filename"
+                else
+                  case "$norm" in
+                    *.auto.tfvars|*.tfvars)           filename="$norm";;
+                    *.auto.tfvars.json|*.tfvars.json) filename="${norm%.json}";;
+                    *)                                 filename="$norm.auto.tfvars";;
+                  esac
+                  printf '%s' "$value" > "$filename"
+                fi
+                [ -f "$filename" ] && echo "Created $filename"
+              done
+
+          # Merge all tfvars into one
+          sudo apt-get update -y >/dev/null
+          sudo apt-get install -y python3-pip >/dev/null
+          python3 -m pip install --user python-hcl2 >/dev/null
+          export PATH="$HOME/.local/bin:$PATH"
+          python3 scripts/merge_tfvars.py
+
+          # Keep only merged file
+          for f in *.auto.tfvars *.auto.tfvars.json; do
+            [ "$f" = "00-all.auto.tfvars.json" ] && continue || true
+            rm -f "$f" || true
+          done
+
+          ls -la 00-all.auto.tfvars.json 2>/dev/null || true
+
+      - name: Refresh project/region/domain from merged tfvars
         run: python Terraform/scripts/export_tf_env.py >> "$GITHUB_ENV"
         env:
           TF_ENV_FALLBACK_PROJECT: ${{ env.PROJECT_NAME }}
           TF_ENV_FALLBACK_REGION: ${{ env.AWS_REGION }}
+          TF_ENV_FALLBACK_DOMAIN: ${{ inputs.domain_name }}
+          TF_ENV_FALLBACK_SANS: ${{ inputs.subject_alternative_names || '[]' }}
+          TF_ENV_FALLBACK_CF_ZONE: ${{ inputs.cloudflare_zone_id }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
