@@ -39,6 +39,7 @@ jobs:
           SECRETS_JSON: ${{ toJson(secrets) }}
         run: |
           set -euo pipefail
+          shopt -s nullglob
 
           cp ../terraform-vars/*.auto.tfvars . 2>/dev/null || true
           cp ../Terraform-vars/*.auto.tfvars . 2>/dev/null || true
@@ -46,41 +47,35 @@ jobs:
           if ! command -v jq >/dev/null 2>&1; then
             sudo apt-get update && sudo apt-get install -y jq
           fi
-
-          echo "$SECRETS_JSON" \
-            | jq -r 'to_entries[] | select(.key | startswith("TERRAFORM_VARS_")) | .key' \
-            | while read -r key; do
-                suffix=${key#TERRAFORM_VARS_}
-                norm=$(echo "$suffix" \
-                  | tr '[:upper:]' '[:lower:]' \
-                  | sed 's/^\s\+//;s/\s\+$//' \
-                  | tr ' /\\' '___' )
-                value=$(jq -r --arg k "$key" '.[$k]' <<< "$SECRETS_JSON")
-                if echo "$value" | jq -e . >/dev/null 2>&1; then
-                  case "$norm" in
-                    *.auto.tfvars.json|*.tfvars.json) filename="$norm";;
-                    *.auto.tfvars|*.tfvars)           filename="$norm.json";;
-                    *)                                 filename="$norm.auto.tfvars.json";;
-                  esac
-                  printf '%s' "$value" > "$filename"
-                else
-                  case "$norm" in
-                    *.auto.tfvars|*.tfvars)           filename="$norm";;
-                    *.auto.tfvars.json|*.tfvars.json) filename="${norm%.json}";;
-                    *)                                 filename="$norm.auto.tfvars";;
-                  esac
-                  printf '%s' "$value" > "$filename"
-                fi
-              done
-
           sudo apt-get update -y >/dev/null
           sudo apt-get install -y python3-pip >/dev/null
           python3 -m pip install --user python-hcl2 >/dev/null
           export PATH="$HOME/.local/bin:$PATH"
+
+          for key in $(echo "$SECRETS_JSON" | jq -r 'to_entries[] | select(.key | startswith("TERRAFORM_VARS_")) | .key'); do
+            suffix=${key#TERRAFORM_VARS_}
+            norm=$(echo "$suffix" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr ' /\\' '___')
+            value=$(jq -r --arg k "$key" '.[$k]' <<< "$SECRETS_JSON")
+            if echo "$value" | jq -e . >/dev/null 2>&1; then
+              case "$norm" in
+                *.auto.tfvars.json|*.tfvars.json) filename="$norm";;
+                *.auto.tfvars|*.tfvars)           filename="$norm.json";;
+                *)                                 filename="$norm.auto.tfvars.json";;
+              esac
+            else
+              case "$norm" in
+                *.auto.tfvars|*.tfvars)           filename="$norm";;
+                *.auto.tfvars.json|*.tfvars.json) filename="${norm%.json}";;
+                *)                                 filename="$norm.auto.tfvars";;
+              esac
+            fi
+            printf '%s' "$value" > "$filename"
+          done
+
           python3 scripts/merge_tfvars.py
 
           for f in *.auto.tfvars *.auto.tfvars.json; do
-            [ "$f" = "00-all.auto.tfvars.json" ] && continue || true
+            [ "$f" = "00-all.auto.tfvars.json" ] && continue
             rm -f "$f" || true
           done
           echo "Merged files:"
