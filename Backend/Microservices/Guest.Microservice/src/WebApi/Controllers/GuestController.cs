@@ -8,7 +8,6 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SharedLibrary.Common;
 using SharedLibrary.Attributes;
-using SharedLibrary.Common.Commands;
 
 namespace WebApi.Controllers
 {
@@ -28,13 +27,7 @@ namespace WebApi.Controllers
             {
                 return HandleFailure(result);
             }
-            
-            var saveResult = await _mediator.Send(new SaveChangesCommand(), cancellationToken);
-            if (saveResult.IsFailure)
-            {
-                return HandleFailure(saveResult);
-            }
-            
+
             return Ok(result);
         }
 

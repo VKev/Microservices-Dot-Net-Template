@@ -1,0 +1,37 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: microservices-local
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      # API Gateway (NodePort 32080 -> host 2406)
+      - containerPort: 32080
+        hostPort: 2406
+        protocol: TCP
+      # Guest/User services (NodePorts 30001/30002)
+      - containerPort: 30001
+        hostPort: 5001
+        protocol: TCP
+      - containerPort: 30002
+        hostPort: 5002
+        protocol: TCP
+      # Redis, RabbitMQ, Postgres
+      - containerPort: 30379
+        hostPort: 6379
+        protocol: TCP
+      - containerPort: 30672
+        hostPort: 5672
+        protocol: TCP
+      - containerPort: 31672
+        hostPort: 15672
+        protocol: TCP
+      - containerPort: 30032
+        hostPort: 5432
+        protocol: TCP
+      # n8n (NodePort 32078 -> host 5678)
+      - containerPort: 32078
+        hostPort: 5678
+        protocol: TCP
+  - role: worker
+  - role: worker
+  - role: worker

@@ -46,6 +46,8 @@ public partial class MyDbContext : DbContext
             entity.Property(e => e.Phonenumber)
                 .HasMaxLength(15)
                 .HasColumnName("phonenumber");
+
+            entity.Navigation(e => e.Guestrolemappings).HasField("_guestrolemappings");
         });
 
         modelBuilder.Entity<Guestrole>(entity =>

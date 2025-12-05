@@ -1,9 +1,6 @@
 using System;
 using SharedLibrary.Common.ResponseModel;
 using SharedLibrary.Abstractions.Messaging;
-using SharedLibrary.Abstractions.UnitOfWork;
-using Application.Common;
-using AutoMapper;
 using Domain.Entities;
 using Domain.Repositories;
 using MassTransit;
@@ -29,34 +26,36 @@ namespace Application.Users.Commands
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
         private readonly IUserRoleRepository _userRoleRepository;
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
         private readonly IPasswordHasher _passwordHasher;
         private readonly IPublishEndpoint _publishEndpoint;
 
-        public RegisterUserCommandHandler(IUserRepository userRepository, IRoleRepository roleRepository, IUserRoleRepository userRoleRepository, IMapper mapper, IUnitOfWork unitOfWork, IPasswordHasher passwordHasher, IPublishEndpoint publishEndpoint)
+        public RegisterUserCommandHandler(IUserRepository userRepository, IRoleRepository roleRepository, IUserRoleRepository userRoleRepository, IPasswordHasher passwordHasher, IPublishEndpoint publishEndpoint)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
             _userRoleRepository = userRoleRepository;
-            _mapper = mapper;
-            _unitOfWork = unitOfWork;
             _passwordHasher = passwordHasher;
             _publishEndpoint = publishEndpoint;
         }
 
         public async Task<Result> Handle(RegisterUserCommand command, CancellationToken cancellationToken)
         {
-            var user = _mapper.Map<User>(command);
-            user.PasswordHash = _passwordHasher.HashPassword(command.Password);
-            user.CreatedAt = DateTimeExtensions.PostgreSqlUtcNow;
-            user.UpdatedAt = DateTimeExtensions.PostgreSqlUtcNow;
-            user.ProviderName = string.IsNullOrWhiteSpace(command.ProviderName) ? "local" : command.ProviderName!;
-            user.ProviderUserId = string.IsNullOrWhiteSpace(command.ProviderUserId) ? command.Email : command.ProviderUserId!;
-            user.DateOfBirth = command.DateOfBirth;
-            user.Gender = string.IsNullOrWhiteSpace(command.Gender) ? "Unknown" : command.Gender;
-            user.PhoneNumber = string.IsNullOrWhiteSpace(command.PhoneNumber) ? string.Empty : command.PhoneNumber;
-            user.IsVerified = false;
+            var providerName = string.IsNullOrWhiteSpace(command.ProviderName) ? "local" : command.ProviderName!;
+            var providerUserId = string.IsNullOrWhiteSpace(command.ProviderUserId) ? command.Email : command.ProviderUserId!;
+            var hashedPassword = _passwordHasher.HashPassword(command.Password);
+            var now = DateTimeExtensions.PostgreSqlUtcNow;
+
+            var user = User.Create(
+                command.Name,
+                command.Email,
+                hashedPassword,
+                providerName,
+                providerUserId,
+                string.IsNullOrWhiteSpace(command.PhoneNumber) ? string.Empty : command.PhoneNumber,
+                now,
+                command.DateOfBirth,
+                string.IsNullOrWhiteSpace(command.Gender) ? "Unknown" : command.Gender,
+                false);
 
             // Find or create default "User" role
             var userRole = await _roleRepository.GetByNameAsync("User", cancellationToken);

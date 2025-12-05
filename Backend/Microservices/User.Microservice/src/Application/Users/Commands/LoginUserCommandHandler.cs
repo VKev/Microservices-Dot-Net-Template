@@ -1,10 +1,8 @@
 using Domain.Entities;
 using Domain.Repositories;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using SharedLibrary.Authentication;
 using SharedLibrary.Common.ResponseModel;
-using SharedLibrary.Abstractions.UnitOfWork;
 using SharedLibrary.Extensions;
 
 namespace Application.Users.Commands;
@@ -14,27 +12,20 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, Result<
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
-    private readonly IUnitOfWork _unitOfWork;
 
     public LoginUserCommandHandler(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
-        IJwtTokenService jwtTokenService,
-        IUnitOfWork unitOfWork)
+        IJwtTokenService jwtTokenService)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
-        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<LoginResponse>> Handle(LoginUserCommand request, CancellationToken cancellationToken)
     {
-        // Find user by email
-        var user = await _userRepository.GetAll()
-            .Include(u => u.UserRoles)
-            .ThenInclude(ur => ur.Role)
-            .FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
+        var user = await _userRepository.GetByEmailWithRolesAsync(request.Email, cancellationToken);
 
         if (user == null)
         {
@@ -55,8 +46,7 @@ public class LoginUserCommandHandler : IRequestHandler<LoginUserCommand, Result<
         var refreshToken = _jwtTokenService.GenerateRefreshToken();
 
         // Update user with refresh token (tracked entity; do not call Update to avoid overwriting immutable fields)
-        user.RefreshToken = refreshToken;
-        user.RefreshTokenExpiry = DateTimeExtensions.PostgreSqlUtcNow.AddDays(7); // timestamptz requires UTC
+        user.SetRefreshToken(refreshToken, DateTimeExtensions.PostgreSqlUtcNow.AddDays(7)); // timestamptz requires UTC
 
         var response = new LoginResponse(
             AccessToken: accessToken,

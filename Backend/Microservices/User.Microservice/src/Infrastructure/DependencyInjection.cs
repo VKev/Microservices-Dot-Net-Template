@@ -1,15 +1,13 @@
 using System;
 using SharedLibrary.Configs;
-using SharedLibrary.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Domain.Repositories;
 using Infrastructure.Repositories;
-using SharedLibrary.Abstractions.UnitOfWork;
 using Infrastructure.Common;
 using MassTransit;
 using Application.Sagas;
 using Application.Consumers;
-using SharedLibrary.Adapters;
+using Application.Abstractions.Data;
 
 namespace Infrastructure
 {
@@ -23,7 +21,6 @@ namespace Infrastructure
             services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IUserRoleRepository, UserRoleRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
-            services.AddScoped<ISaveChangesUnitOfWork, SaveChangesUnitOfWorkAdapter>();
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddSingleton<EnvironmentConfig>();
 

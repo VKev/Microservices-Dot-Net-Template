@@ -112,6 +112,8 @@ public partial class MyDbContext : DbContext
             entity.Property(e => e.IsVerified)
                 .HasDefaultValue(false)
                 .HasColumnName("is_verified");
+
+            entity.Navigation(e => e.UserRoles).HasField("_userRoles");
         });
 
         modelBuilder.Entity<UserRole>(entity =>

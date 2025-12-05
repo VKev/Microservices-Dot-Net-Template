@@ -2,13 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using SharedLibrary.Common;
 using Domain.Entities;
 
-namespace Domain.Repositories
+namespace Domain.Repositories;
+
+public interface IGuestRepository : IRepository<Guest>
 {
-    public interface IGuestRepository : IRepository<Guest>
-    {
-        Task<Guest?> GetByEmailAsync(string email, CancellationToken cancellationToken);
-    }
+    Task<Guest?> GetByEmailAsync(string email, CancellationToken cancellationToken);
 }

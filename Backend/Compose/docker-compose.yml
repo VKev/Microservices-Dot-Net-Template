@@ -1,0 +1,209 @@
+services:
+  guest-microservice:
+    build:
+      context: ../Microservices
+      dockerfile: ./Guest.Microservice/Dockerfile
+      args:
+        SERVICE_NAME: Guest.Microservice
+    image: guest-microservice
+    container_name: guest-microservice
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:5001
+      Database__Host: postgres
+      Database__Port: 5432
+      Database__Name: guestdb
+      Database__Username: postgres
+      Database__Password: changeme
+      Database__Provider: postgres
+      RabbitMq__Host: rabbit-mq
+      RabbitMq__Port: 5672
+      RabbitMq__Username: rabbitmq
+      RabbitMq__Password: changeme
+      Redis__Host: redis
+      Redis__Password: changeme
+      Redis__Port: 6379
+      Jwt__SecretKey: changeme-at-least-32-chars----------------
+      Jwt__Issuer: UserMicroservice
+      Jwt__Audience: MicroservicesApp
+      Jwt__ExpirationMinutes: 60
+      AutoApply__Migrations: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbit-mq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  user-microservice:
+    build:
+      context: ../Microservices
+      dockerfile: ./User.Microservice/Dockerfile
+      args:
+        SERVICE_NAME: User.Microservice
+    image: user-microservice
+    container_name: user-microservice
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:5002
+      Database__Host: postgres
+      Database__Port: 5432
+      Database__Name: userdb
+      Database__Username: postgres
+      Database__Password: changeme
+      Database__Provider: postgres
+      Database__SslMode: Disable
+      RabbitMq__Host: rabbit-mq
+      RabbitMq__Port: 5672
+      RabbitMq__Username: rabbitmq
+      RabbitMq__Password: changeme
+      Redis__Host: redis
+      Redis__Password: changeme
+      Redis__Port: 6379
+      Jwt__SecretKey: changeme-at-least-32-chars----------------
+      Jwt__Issuer: UserMicroservice
+      Jwt__Audience: MicroservicesApp
+      Jwt__ExpirationMinutes: 60
+      Cors__AllowedOrigins__0: http://localhost:5173
+      Cors__AllowedOrigins__1: https://your-frontend.example.com
+      Cors__AllowedOrigins__2: http://localhost:2406
+      AutoApply__Migrations: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbit-mq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  api-gateway:
+    build:
+      context: ../Microservices
+      dockerfile: ./ApiGateway/Dockerfile
+    image: api-gateway
+    container_name: api-gateway
+    ports:
+      - "2406:8080"
+    environment:
+      ENABLE_SWAGGER_UI: true
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      Services__User__Host: user-microservice
+      Services__User__Port: 5002
+      Services__Guest__Host: guest-microservice
+      Services__Guest__Port: 5001
+      Jwt__SecretKey: changeme-at-least-32-chars----------------
+      Jwt__Issuer: UserMicroservice
+      Jwt__Audience: MicroservicesApp
+      Jwt__ExpirationMinutes: 60
+    networks:
+      - app-network
+
+  rabbit-mq:
+    image: rabbitmq:3-management
+    container_name: rabbit-mq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbitmq
+      RABBITMQ_DEFAULT_PASS: changeme
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    command: ["redis-server", "--requirepass", "changeme"]
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli","-a", "changeme", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: changeme
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    environment:
+      N8N_HOST: 0.0.0.0
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      N8N_SECURE_COOKIE: false
+      N8N_PATH: /n8n/
+      GENERIC_TIMEZONE: Asia/Ho_Chi_Minh
+      TZ: Asia/Ho_Chi_Minh
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: true
+      N8N_DIAGNOSTICS_ENABLED: false
+      N8N_VERSION_NOTIFICATIONS_ENABLED: false
+      N8N_TEMPLATES_ENABLED: false
+      N8N_METRICS: true
+      QUEUE_HEALTH_CHECK_ACTIVE: true
+      NODE_OPTIONS: --max-old-space-size=512
+      N8N_EDITOR_BASE_URL: http://localhost:5678/n8n/
+      WEBHOOK_URL: http://localhost:5678/n8n/
+      VUE_APP_URL_BASE_API: http://localhost:5678/n8n/
+    expose:
+      - "5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      - n8n
+    ports:
+      - "5678:5678"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  rabbitmq-data:
+  redis-data:
+  n8n_data:
+  postgres-data:

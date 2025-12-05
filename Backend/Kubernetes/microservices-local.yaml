@@ -1,0 +1,688 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: microservices
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-auth
+  namespace: microservices
+type: Opaque
+stringData:
+  redis-password: "changeme"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-auth
+  namespace: microservices
+type: Opaque
+stringData:
+  rabbitmq-username: "rabbitmq"
+  rabbitmq-password: "changeme"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-auth
+  namespace: microservices
+type: Opaque
+stringData:
+  postgres-user: "postgres"
+  postgres-password: "changeme"
+---
+# Postgres (local dev)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: postgres-password
+          resources:
+            requests: { cpu: "100m", memory: "192Mi" }
+            limits: { cpu: "250m", memory: "256Mi" }
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: postgres-init
+              mountPath: /docker-entrypoint-initdb.d/init.sql
+              subPath: init.sql
+      volumes:
+        - name: postgres-data
+          emptyDir: {}
+        - name: postgres-init
+          configMap:
+            name: postgres-init-sql
+            items:
+              - key: init.sql
+                path: init.sql
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-sql
+  namespace: microservices
+data:
+  init.sql: |
+    CREATE DATABASE guestdb;
+    CREATE DATABASE userdb;
+    GRANT ALL PRIVILEGES ON DATABASE guestdb TO postgres;
+    GRANT ALL PRIVILEGES ON DATABASE userdb TO postgres;
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: microservices
+spec:
+  type: NodePort
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+      nodePort: 30032
+---
+# Redis
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:alpine
+          ports:
+            - containerPort: 6379
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-auth
+                  key: redis-password
+          resources:
+            requests: { cpu: "25m", memory: "64Mi" }
+            limits: { cpu: "100m", memory: "128Mi" }
+          command: ['sh', '-c', 'exec redis-server --requirepass "$REDIS_PASSWORD"']
+          livenessProbe:
+            exec:
+              command: ['sh', '-c', 'redis-cli -a "$REDIS_PASSWORD" ping']
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ['sh', '-c', 'redis-cli -a "$REDIS_PASSWORD" ping']
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+      volumes:
+        - name: redis-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: microservices
+spec:
+  type: NodePort
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+      nodePort: 30379
+---
+# RabbitMQ
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbit-mq
+          image: rabbitmq:3-management
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: rabbitmq-username
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: rabbitmq-password
+          resources:
+            requests: { cpu: "100m", memory: "192Mi" }
+            limits: { cpu: "250m", memory: "320Mi" }
+          livenessProbe:
+            exec: { command: ["rabbitmq-diagnostics", "-q", "ping"] }
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            exec: { command: ["rabbitmq-diagnostics", "-q", "ping"] }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          volumeMounts:
+            - name: rabbitmq-data
+              mountPath: /var/lib/rabbitmq
+      volumes:
+        - name: rabbitmq-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbit-mq
+  namespace: microservices
+spec:
+  type: NodePort
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+      nodePort: 30672
+    - name: management
+      port: 15672
+      targetPort: 15672
+      nodePort: 31672
+---
+# n8n (optional, matches compose)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: n8n
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: n8n
+  template:
+    metadata:
+      labels:
+        app: n8n
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: n8n
+          image: n8nio/n8n:latest
+          ports:
+            - containerPort: 5678
+          env:
+            - name: N8N_HOST
+              value: "0.0.0.0"
+            - name: N8N_PORT
+              value: "5678"
+            - name: N8N_PROTOCOL
+              value: "http"
+            - name: GENERIC_TIMEZONE
+              value: "Asia/Ho_Chi_Minh"
+            - name: TZ
+              value: "Asia/Ho_Chi_Minh"
+            - name: N8N_DB_TYPE
+              value: "postgresdb"
+            - name: N8N_DB_POSTGRESDB_HOST
+              value: "postgres"
+            - name: N8N_DB_POSTGRESDB_PORT
+              value: "5432"
+            - name: N8N_DB_POSTGRESDB_DATABASE
+              value: "n8ndb"
+            - name: N8N_DB_POSTGRESDB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: postgres-user
+            - name: N8N_DB_POSTGRESDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: postgres-password
+          resources:
+            requests: { cpu: "150m", memory: "256Mi" }
+            limits: { cpu: "300m", memory: "384Mi" }
+          volumeMounts:
+            - name: n8n-data
+              mountPath: /home/node/.n8n
+      volumes:
+        - name: n8n-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: n8n
+  namespace: microservices
+spec:
+  type: ClusterIP
+  selector:
+    app: n8n
+  ports:
+    - port: 5678
+      targetPort: 5678
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: n8n-nginx-conf
+  namespace: microservices
+data:
+  nginx.conf: |
+    user  nginx;
+    worker_processes  auto;
+
+    error_log  /var/log/nginx/error.log warn;
+    pid        /var/run/nginx.pid;
+
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        include       /etc/nginx/mime.types;
+        default_type  application/octet-stream;
+
+        resolver 127.0.0.11 valid=30s ipv6=off;
+
+        map $http_upgrade $connection_upgrade {
+            default upgrade;
+            ''      close;
+        }
+
+        sendfile        on;
+        keepalive_timeout  65;
+
+        server {
+            listen 5678;
+            server_name _;
+
+            location = /       { return 302 /n8n/; }
+            location = /n8n    { return 301 /n8n/; }
+
+            location /n8n/ {
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection $connection_upgrade;
+
+                proxy_set_header Host              $http_host;
+                proxy_set_header X-Real-IP         $remote_addr;
+                proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header X-Forwarded-Host  $http_host;
+                proxy_set_header X-Forwarded-Port  $server_port;
+                proxy_set_header X-Forwarded-Prefix /n8n;
+
+                proxy_read_timeout 300;
+                proxy_send_timeout 300;
+
+                rewrite ^/n8n/(.*)$ /$1 break;
+                proxy_pass http://n8n:5678/;
+            }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: n8n-proxy
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: n8n-proxy
+  template:
+    metadata:
+      labels:
+        app: n8n-proxy
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 5678
+          resources:
+            requests: { cpu: "25m", memory: "32Mi" }
+            limits: { cpu: "100m", memory: "64Mi" }
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: n8n-nginx-conf
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: n8n-proxy
+  namespace: microservices
+spec:
+  type: NodePort
+  selector:
+    app: n8n-proxy
+  ports:
+    - port: 5678
+      targetPort: 5678
+      nodePort: 32078
+---
+# Guest microservice
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guest-microservice
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: guest-microservice
+  template:
+    metadata:
+      labels:
+        app: guest-microservice
+    spec:
+      containers:
+        - name: guest-microservice
+          image: guest-microservice:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5001
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+            - name: ASPNETCORE_URLS
+              value: http://+:5001
+            - name: Database__Host
+              value: postgres
+            - name: Database__Port
+              value: "5432"
+            - name: Database__Name
+              value: guestdb
+            - name: Database__Username
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: postgres-user
+            - name: Database__Password
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: postgres-password
+            - name: Database__Provider
+              value: postgres
+            - name: RabbitMq__Host
+              value: rabbit-mq
+            - name: RabbitMq__Port
+              value: "5672"
+            - name: RabbitMq__Username
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: rabbitmq-username
+            - name: RabbitMq__Password
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: rabbitmq-password
+            - name: Redis__Host
+              value: redis
+            - name: Redis__Password
+              valueFrom:
+                secretKeyRef:
+                  name: redis-auth
+                  key: redis-password
+            - name: Redis__Port
+              value: "6379"
+            - name: Jwt__SecretKey
+              value: changeme-at-least-32-chars----------------
+            - name: Jwt__Issuer
+              value: UserMicroservice
+            - name: Jwt__Audience
+              value: MicroservicesApp
+            - name: Jwt__ExpirationMinutes
+              value: "60"
+            - name: AutoApply__Migrations
+              value: "true"
+          resources:
+            requests: { cpu: "100m", memory: "192Mi" }
+            limits: { cpu: "250m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: guest-microservice
+  namespace: microservices
+spec:
+  type: NodePort
+  selector:
+    app: guest-microservice
+  ports:
+    - port: 5001
+      targetPort: 5001
+      nodePort: 30001
+---
+# User microservice
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-microservice
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-microservice
+  template:
+    metadata:
+      labels:
+        app: user-microservice
+    spec:
+      containers:
+        - name: user-microservice
+          image: user-microservice:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5002
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+            - name: ASPNETCORE_URLS
+              value: http://+:5002
+            - name: Database__Host
+              value: postgres
+            - name: Database__Port
+              value: "5432"
+            - name: Database__Name
+              value: userdb
+            - name: Database__Username
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: postgres-user
+            - name: Database__Password
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: postgres-password
+            - name: Database__Provider
+              value: postgres
+            - name: Database__SslMode
+              value: Disable
+            - name: RabbitMq__Host
+              value: rabbit-mq
+            - name: RabbitMq__Port
+              value: "5672"
+            - name: RabbitMq__Username
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: rabbitmq-username
+            - name: RabbitMq__Password
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: rabbitmq-password
+            - name: Redis__Host
+              value: redis
+            - name: Redis__Password
+              valueFrom:
+                secretKeyRef:
+                  name: redis-auth
+                  key: redis-password
+            - name: Redis__Port
+              value: "6379"
+            - name: Jwt__SecretKey
+              value: changeme-at-least-32-chars----------------
+            - name: Jwt__Issuer
+              value: UserMicroservice
+            - name: Jwt__Audience
+              value: MicroservicesApp
+            - name: Jwt__ExpirationMinutes
+              value: "60"
+            - name: Cors__AllowedOrigins__0
+              value: http://localhost:5173
+            - name: Cors__AllowedOrigins__1
+              value: https://your-frontend.example.com
+            - name: Cors__AllowedOrigins__2
+              value: http://localhost:2406
+            - name: AutoApply__Migrations
+              value: "true"
+          resources:
+            requests: { cpu: "100m", memory: "192Mi" }
+            limits: { cpu: "250m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-microservice
+  namespace: microservices
+spec:
+  type: NodePort
+  selector:
+    app: user-microservice
+  ports:
+    - port: 5002
+      targetPort: 5002
+      nodePort: 30002
+---
+# API Gateway
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: api-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ENABLE_SWAGGER_UI
+              value: "true"
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+            - name: ASPNETCORE_URLS
+              value: http://+:8080
+            - name: Services__User__Host
+              value: user-microservice
+            - name: Services__User__Port
+              value: "5002"
+            - name: Services__Guest__Host
+              value: guest-microservice
+            - name: Services__Guest__Port
+              value: "5001"
+            - name: Jwt__SecretKey
+              value: changeme-at-least-32-chars----------------
+            - name: Jwt__Issuer
+              value: UserMicroservice
+            - name: Jwt__Audience
+              value: MicroservicesApp
+            - name: Jwt__ExpirationMinutes
+              value: "60"
+          resources:
+            requests: { cpu: "100m", memory: "160Mi" }
+            limits: { cpu: "250m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: microservices
+spec:
+  type: NodePort
+  selector:
+    app: api-gateway
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 32080

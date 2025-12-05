@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 using SharedLibrary.Common;
 using SharedLibrary.Authentication;
 using SharedLibrary.Attributes;
-using SharedLibrary.Common.Commands;
 
 namespace WebApi.Controllers
 {
@@ -29,11 +28,6 @@ namespace WebApi.Controllers
             {
                 return HandleFailure(result);
             }
-            var commit = await _mediator.Send(new SaveChangesCommand(), cancellationToken);
-            if (commit.IsFailure)
-            {
-                return HandleFailure(commit);
-            }
             return Ok(result);
         }
 
@@ -46,11 +40,6 @@ namespace WebApi.Controllers
             {
                 return HandleFailure(result);
             }
-            var commit = await _mediator.Send(new SaveChangesCommand(), cancellationToken);
-            if (commit.IsFailure)
-            {
-                return HandleFailure(commit);
-            }
             return Ok(result);
         }
 
@@ -62,11 +51,6 @@ namespace WebApi.Controllers
             if (result.IsFailure)
             {
                 return HandleFailure(result);
-            }
-            var commit = await _mediator.Send(new SaveChangesCommand(), cancellationToken);
-            if (commit.IsFailure)
-            {
-                return HandleFailure(commit);
             }
             return Ok(result);
         }

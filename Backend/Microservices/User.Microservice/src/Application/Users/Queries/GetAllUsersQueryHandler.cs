@@ -7,7 +7,6 @@ using SharedLibrary.Abstractions.Messaging;
 using AutoMapper;
 using Domain.Repositories;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Application.Users.Queries
 {
@@ -26,10 +25,8 @@ namespace Application.Users.Queries
 
         public async Task<Result<IEnumerable<GetUserResponse>>> Handle(GetAllUsersQuery request, CancellationToken cancellationToken)
         {
-            var userResponses = await _userRepository
-                .GetAll()
-                .Select(u => new GetUserResponse(u.Name, u.Email))
-                .ToListAsync(cancellationToken);
+            var users = await _userRepository.GetAllAsync(cancellationToken);
+            var userResponses = users.Select(u => new GetUserResponse(u.Name, u.Email)).ToList();
 
             return Result.Success(userResponses.AsEnumerable());
         }

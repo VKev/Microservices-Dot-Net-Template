@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using SharedLibrary.Common.ResponseModel;
 using SharedLibrary.Abstractions.Messaging;
 using Application.Common;
-using AutoMapper;
 using Domain.Entities;
 using Domain.Repositories;
 using MassTransit;
@@ -21,13 +20,11 @@ namespace Application.Guests.Commands
     internal sealed class CreateGuestCommandHandler : ICommandHandler<CreateGuestCommand>
     {
         private readonly IGuestRepository _guestRepository;
-        private readonly IMapper _mapper;
         private readonly IPublishEndpoint _publishEndpoint;
 
-        public CreateGuestCommandHandler(IGuestRepository guestRepository, IMapper mapper, IPublishEndpoint publishEndpoint)
+        public CreateGuestCommandHandler(IGuestRepository guestRepository, IPublishEndpoint publishEndpoint)
         {
             _guestRepository = guestRepository;
-            _mapper = mapper;
             _publishEndpoint = publishEndpoint;
         }
         public async Task<Result> Handle(CreateGuestCommand command, CancellationToken cancellationToken)
@@ -41,7 +38,8 @@ namespace Application.Guests.Commands
             var correlationId = Guid.NewGuid();
             var generatedPassword = $"Guest-{Guid.NewGuid():N}";
 
-            await _guestRepository.AddAsync(_mapper.Map<Guest>(command), cancellationToken);
+            var guest = Guest.Create(command.Fullname, command.Email, command.PhoneNumber);
+            await _guestRepository.AddAsync(guest, cancellationToken);
 
             await _publishEndpoint.Publish(new GuestCreatedEvent
             {

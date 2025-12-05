@@ -3,12 +3,10 @@ using SharedLibrary.Configs;
 using Microsoft.Extensions.DependencyInjection;
 using Domain.Repositories;
 using Infrastructure.Repositories;
-using SharedLibrary.Abstractions.UnitOfWork;
-using SharedLibrary.Common;
 using Infrastructure.Common;
-using SharedLibrary.Adapters;
 using MassTransit;
 using Application.Consumers;
+using Application.Abstractions.Data;
 
 namespace Infrastructure
 {
@@ -19,7 +17,6 @@ namespace Infrastructure
 
             services.AddScoped<IGuestRepository, GuestRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
-            services.AddScoped<ISaveChangesUnitOfWork, SaveChangesUnitOfWorkAdapter>();
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddSingleton<EnvironmentConfig>();
             services.AddMassTransit(busConfigurator =>

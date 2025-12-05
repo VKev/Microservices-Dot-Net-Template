@@ -6,7 +6,6 @@ using Application.Guests.Commands;
 using MassTransit;
 using SharedLibrary.Contracts.UserCreating;
 using MediatR;
-using SharedLibrary.Common.Commands;
 
 namespace Application.Consumers
 {
@@ -44,17 +43,6 @@ namespace Application.Consumers
                 {
                     CorrelationId = context.Message.CorrelationId,
                     Reason = result.Error.Description
-                }, context.CancellationToken);
-                return;
-            }
-            
-            var saveResult = await _sender.Send(new SaveChangesCommand(), context.CancellationToken);
-            if (saveResult.IsFailure)
-            {
-                await context.Publish(new GuestCreatedFailureEvent
-                {
-                    CorrelationId = context.Message.CorrelationId,
-                    Reason = saveResult.Error.Description
                 }, context.CancellationToken);
                 return;
             }

@@ -4,7 +4,6 @@ using Domain.Repositories;
 using MassTransit;
 using MediatR;
 using SharedLibrary.Contracts.UserCreating;
-using SharedLibrary.Common.Commands;
 
 namespace Application.Consumers
 {
@@ -61,8 +60,6 @@ namespace Application.Consumers
                 }, context.CancellationToken);
                 return;
             }
-
-            await _mediator.Send(new SaveChangesCommand(), context.CancellationToken);
         }
     }
 }

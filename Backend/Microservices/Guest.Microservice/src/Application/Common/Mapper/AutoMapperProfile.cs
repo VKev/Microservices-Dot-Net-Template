@@ -13,10 +13,9 @@ namespace Application.Common.Mapper
     {
         public AutoMapperProfile()
         {
-            CreateMap<CreateGuestCommand, Guest>();
-            CreateMap<Guest, CreateGuestCommand>();
+            CreateMap<CreateGuestCommand, Guest>()
+                .ConstructUsing(src => Guest.Create(src.Fullname, src.Email, src.PhoneNumber));
 
-            CreateMap<GetGuestResponse,Guest>();
             CreateMap<Guest, GetGuestResponse>();
         }
         
