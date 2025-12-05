@@ -185,6 +185,7 @@ jobs:
           for f in *.auto.tfvars *.auto.tfvars.json; do
             [ "$f" = "00-all.auto.tfvars.json" ] && continue || true
             rm -f "$f" || true
+          done
 
       - name: Ensure jq
         run: sudo apt-get update && sudo apt-get install -y jq

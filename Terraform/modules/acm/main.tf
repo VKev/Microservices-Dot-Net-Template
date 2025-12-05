@@ -11,10 +11,14 @@ resource "aws_acm_certificate" "this" {
 }
 
 locals {
+  zone_root = trim(var.domain_name, ".")
+
   validation_records = {
     for dvo in aws_acm_certificate.this.domain_validation_options :
     dvo.domain_name => {
-      name  = trimsuffix(dvo.resource_record_name, ".")
+      # Cloudflare expects names relative to the zone when allow_overwrite is used.
+      fqdn  = trimsuffix(dvo.resource_record_name, ".")
+      name  = trimsuffix(trimsuffix(dvo.resource_record_name, "."), ".${local.zone_root}")
       type  = dvo.resource_record_type
       value = trimsuffix(dvo.resource_record_value, ".")
     }
@@ -36,7 +40,7 @@ resource "cloudflare_record" "acm_validation" {
 
 resource "aws_acm_certificate_validation" "this" {
   certificate_arn         = aws_acm_certificate.this.arn
-  validation_record_fqdns = [for record in local.validation_records : record.name]
+  validation_record_fqdns = [for record in local.validation_records : record.fqdn]
 
   depends_on = [cloudflare_record.acm_validation]
 }
