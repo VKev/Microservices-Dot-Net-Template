@@ -157,6 +157,19 @@ jobs:
             echo "TF_VAR_cloudflare_api_token=$env_token" >> "$GITHUB_ENV"
           fi
 
+      - name: Export Cloudflare token from tfvars (fallback if secret unset)
+        if: ${{ env.TF_VAR_cloudflare_api_token == '' }}
+        working-directory: Terraform
+        run: |
+          set -euo pipefail
+          if [ -f 00-all.auto.tfvars.json ]; then
+            token=$(jq -r 'try(.cloudflare_api_token // "")' 00-all.auto.tfvars.json || echo "")
+            if [ -n "$token" ]; then
+              echo "TF_VAR_cloudflare_api_token=$token" >> "$GITHUB_ENV"
+              echo "Cloudflare token exported from tfvars."
+            fi
+          fi
+
       - name: Initialize Terraform (remote backend)
         working-directory: Terraform/acm
         env:
