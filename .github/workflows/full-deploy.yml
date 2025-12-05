@@ -310,8 +310,8 @@ jobs:
   terraform-deploy:
     name: Terraform Deploy
     runs-on: ubuntu-latest
-    needs: [bootstrap-backend, build-and-push, acm-check]
-    if: always() && needs.bootstrap-backend.result == 'success' && needs.acm-check.result != 'failure'
+    needs: [bootstrap-backend, build-and-push]
+    if: always() && needs.bootstrap-backend.result == 'success'
     outputs:
       alb_dns_name: ${{ steps.terraform-outputs.outputs.alb_dns_name }}
       cloudfront_https_url: ${{ steps.terraform-outputs.outputs.cloudfront_https_url }}
