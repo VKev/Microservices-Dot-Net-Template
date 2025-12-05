@@ -1,0 +1,168 @@
+name: Request ACM Certificate (Cloudflare DNS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "GitHub Environment to use."
+        type: string
+        default: infrastructure-khanghv2406
+        required: true
+      action:
+        description: "Terraform action to perform"
+        type: choice
+        options: [plan, apply]
+        default: plan
+        required: true
+      domain_name:
+        description: "Root domain for the ACM cert (e.g., vkev.me). Uses repo/env var ACM_DOMAIN_NAME when empty."
+        type: string
+        default: ""
+        required: false
+      subject_alternative_names:
+        description: "JSON list of SANs (e.g., [\"*.vkev.me\"]). Uses repo/env var ACM_SANS when empty."
+        type: string
+        default: ""
+        required: false
+      cloudflare_zone_id:
+        description: "Cloudflare Zone ID. Uses repo/env var CLOUDFLARE_ZONE_ID when empty."
+        type: string
+        default: ""
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: ""
+  PROJECT_NAME: ""
+  ACM_DOMAIN_NAME: ${{ inputs.domain_name || vars.ACM_DOMAIN_NAME || '' }}
+  ACM_SANS: ${{ inputs.subject_alternative_names || vars.ACM_SANS || '[]' }}
+  CLOUDFLARE_ZONE_ID: ${{ inputs.cloudflare_zone_id || vars.CLOUDFLARE_ZONE_ID || '' }}
+
+jobs:
+  acm:
+    name: acm-${{ inputs.action }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load project/region from Terraform vars
+        run: python Terraform/scripts/export_tf_env.py >> "$GITHUB_ENV"
+        env:
+          TF_ENV_FALLBACK_PROJECT: ${{ env.PROJECT_NAME }}
+          TF_ENV_FALLBACK_REGION: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Validate required inputs
+        run: |
+          set -euo pipefail
+          if [ -z "${ACM_DOMAIN_NAME}" ]; then
+            echo "ACM_DOMAIN_NAME is required (input domain_name or repo/env var ACM_DOMAIN_NAME)." >&2
+            exit 1
+          fi
+          if [ -z "${CLOUDFLARE_ZONE_ID}" ]; then
+            echo "CLOUDFLARE_ZONE_ID is required (input cloudflare_zone_id or repo/env var CLOUDFLARE_ZONE_ID)." >&2
+            exit 1
+          fi
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "CLOUDFLARE_API_TOKEN secret is required." >&2
+            exit 1
+          fi
+        env:
+          ACM_DOMAIN_NAME: ${{ env.ACM_DOMAIN_NAME }}
+          CLOUDFLARE_ZONE_ID: ${{ env.CLOUDFLARE_ZONE_ID }}
+
+      - name: Initialize Terraform (remote backend)
+        working-directory: Terraform/acm
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          PROJECT_NAME: ${{ env.PROJECT_NAME }}
+        run: |
+          BUCKET="${PROJECT_NAME}-${AWS_REGION}-terraform-state"
+          TABLE="${PROJECT_NAME}-${AWS_REGION}-terraform-locks"
+          terraform init \
+            -backend-config="bucket=${BUCKET}" \
+            -backend-config="key=terraform/acm.tfstate" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="dynamodb_table=${TABLE}" \
+            -backend-config="encrypt=true" \
+            -input=false
+
+      - name: Validate Terraform
+        working-directory: Terraform/acm
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: Terraform/acm
+        env:
+          TF_VAR_domain_name: ${{ env.ACM_DOMAIN_NAME }}
+          TF_VAR_subject_alternative_names: ${{ env.ACM_SANS }}
+          TF_VAR_cloudflare_zone_id: ${{ env.CLOUDFLARE_ZONE_ID }}
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_aws_region: ${{ env.AWS_REGION }}
+        run: |
+          set +e
+          terraform plan \
+            -input=false \
+            -out=tfplan \
+            -var="domain_name=${TF_VAR_domain_name}" \
+            -var="cloudflare_zone_id=${TF_VAR_cloudflare_zone_id}" \
+            -var="subject_alternative_names=${TF_VAR_subject_alternative_names}" \
+            -var="aws_region=${TF_VAR_aws_region}"
+          exit_code=$?
+          set -e
+          echo "exitcode=$exit_code" >> "$GITHUB_OUTPUT"
+          if [ "$exit_code" -eq 1 ]; then
+            echo "Terraform plan failed!"
+            exit 1
+          fi
+
+      - name: Show Plan
+        working-directory: Terraform/acm
+        run: terraform show -no-color tfplan
+
+      - name: Terraform Apply
+        if: inputs.action == 'apply' && steps.plan.outcome == 'success'
+        working-directory: Terraform/acm
+        env:
+          TF_VAR_domain_name: ${{ env.ACM_DOMAIN_NAME }}
+          TF_VAR_subject_alternative_names: ${{ env.ACM_SANS }}
+          TF_VAR_cloudflare_zone_id: ${{ env.CLOUDFLARE_ZONE_ID }}
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_aws_region: ${{ env.AWS_REGION }}
+        run: |
+          terraform apply -input=false -auto-approve tfplan
+
+      - name: Show Outputs
+        if: inputs.action == 'apply'
+        working-directory: Terraform/acm
+        run: |
+          echo "## ACM Outputs" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          terraform output >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Terraform Plan
+        if: inputs.action == 'plan'
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-acm-plan-${{ github.sha }}
+          path: Terraform/acm/tfplan
+          retention-days: 7

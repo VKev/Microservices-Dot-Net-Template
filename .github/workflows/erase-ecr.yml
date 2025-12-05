@@ -20,8 +20,7 @@ on:
         default: ""
 
 env:
-  # Falls back if environment vars are missing
-  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  AWS_REGION: ""
 
 permissions:
   contents: read
@@ -32,9 +31,6 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.environment }}
-    env:
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4

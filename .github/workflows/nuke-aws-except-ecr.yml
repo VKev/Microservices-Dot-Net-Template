@@ -14,7 +14,7 @@ on:
         default: ""
 
 env:
-  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  AWS_REGION: ""
 
 permissions:
   contents: read
@@ -26,8 +26,6 @@ jobs:
     if: ${{ github.event.inputs.confirm == 'NUKE' }}
     environment:
       name: ${{ inputs.environment }}
-    env:
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

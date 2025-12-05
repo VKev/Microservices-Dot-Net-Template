@@ -10,7 +10,8 @@ on:
         required: true
 
 env:
-  PROJECT_NAME: ${{ vars.PROJECT_NAME || 'default' }}
+  AWS_REGION: ""
+  PROJECT_NAME: ""
 
 permissions:
   contents: read
@@ -72,11 +73,15 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.discover-services.outputs.services) }}
       fail-fast: false
-    env:
-      PROJECT_NAME: ${{ vars.PROJECT_NAME || 'default' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Load project/region from Terraform vars
+        run: python Terraform/scripts/export_tf_env.py >> "$GITHUB_ENV"
+        env:
+          TF_ENV_FALLBACK_PROJECT: ${{ env.PROJECT_NAME }}
+          TF_ENV_FALLBACK_REGION: ${{ env.AWS_REGION }}
 
       - name: Set Docker Hub namespace
         run: |

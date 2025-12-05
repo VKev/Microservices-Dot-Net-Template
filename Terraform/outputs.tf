@@ -1,7 +1,7 @@
 locals {
   cloudfront_enabled  = length(module.cloudfront) > 0
   cloudfront_endpoint = local.cloudfront_enabled ? module.cloudfront[0].cloudfront_https_url : null
-  cloudflare_endpoint = var.use_cloudflare ? "https://${var.cloudflare_record_name == "@" ? var.cloudflare_domain : "${var.cloudflare_record_name}.${var.cloudflare_domain}"}" : null
+  cloudflare_endpoint = var.use_cloudflare ? "https://${var.cloudflare_record_name == "@" ? var.domain_name : "${var.cloudflare_record_name}.${var.domain_name}"}" : null
 }
 
 output "alb_dns_name" {

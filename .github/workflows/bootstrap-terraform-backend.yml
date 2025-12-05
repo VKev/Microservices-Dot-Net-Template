@@ -13,8 +13,8 @@ permissions:
   contents: read
 
 env:
-  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-  PROJECT_NAME: ${{ vars.PROJECT_NAME || 'microservices-dot-net-template' }}
+  AWS_REGION: ""
+  PROJECT_NAME: ""
 
 jobs:
   bootstrap:

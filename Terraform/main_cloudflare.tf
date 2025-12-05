@@ -24,8 +24,8 @@ resource "cloudflare_zone_settings_override" "zone_ssl_mode" {
   zone_id = var.cloudflare_zone_id
 
   settings {
-    # Keep origin HTTP (ALB listener on 80) by forcing Cloudflare to use Flexible SSL toward origin.
-    ssl = "flexible"
+    # Use Strict only when an ACM cert is attached to the ALB; otherwise keep Flexible.
+    ssl = var.certificate_arn != null ? "strict" : "flexible"
   }
 }
 

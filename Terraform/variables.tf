@@ -159,7 +159,7 @@ variable "cloudflare_zone_id" {
   default     = ""
 }
 
-variable "cloudflare_domain" {
+variable "domain_name" {
   description = "The domain name managed in Cloudflare (e.g., example.com)."
   type        = string
   default     = ""

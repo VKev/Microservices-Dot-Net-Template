@@ -8,7 +8,7 @@ locals {
   n8n_service_port         = var.services.n8n.ecs_container_port_mappings[0].container_port
 
   # Public endpoint - use Cloudflare if enabled, then CloudFront if enabled, otherwise ALB HTTP
-  public_endpoint = var.use_cloudflare ? "https://${var.cloudflare_record_name == "@" ? var.cloudflare_domain : "${var.cloudflare_record_name}.${var.cloudflare_domain}"}" : (var.use_cloudfront_https ? "https://${module.cloudfront[0].cloudfront_domain_name}" : "http://${module.alb.alb_dns_name}")
+  public_endpoint = var.use_cloudflare ? "https://${var.cloudflare_record_name == "@" ? var.domain_name : "${var.cloudflare_record_name}.${var.domain_name}"}" : (var.use_cloudfront_https ? "https://${module.cloudfront[0].cloudfront_domain_name}" : "http://${module.alb.alb_dns_name}")
 
   # Proxy depth for n8n - CloudFront adds one more hop (CloudFront -> ALB -> Container)
   # Without CloudFront: 1 (ALB -> Container)

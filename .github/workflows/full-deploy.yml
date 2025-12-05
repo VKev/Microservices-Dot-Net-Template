@@ -16,8 +16,8 @@ on:
         required: true
 
 env:
-  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-  PROJECT_NAME: ${{ vars.PROJECT_NAME || 'vkev2406-infrastructure-khanghv2406' }}
+  AWS_REGION: ""
+  PROJECT_NAME: ""
 
 permissions:
   contents: read
@@ -29,9 +29,6 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.environment }}
-    env:
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-      PROJECT_NAME: ${{ vars.PROJECT_NAME || 'vkev2406-infrastructure-khanghv2406' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -121,10 +118,6 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.discover-services.outputs.services) }}
       fail-fast: false
-    env:
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-      PROJECT_NAME: ${{ vars.PROJECT_NAME || 'vkev2406-infrastructure-khanghv2406' }}
-      ECR_REPO_NAME: ${{ vars.ECR_REPO_NAME || format('{0}-{1}-ecr', vars.PROJECT_NAME || 'vkev2406-infrastructure-khanghv2406', inputs.environment) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -210,9 +203,6 @@ jobs:
       primary_endpoint: ${{ steps.terraform-outputs.outputs.primary_endpoint }}
     environment:
       name: ${{ inputs.environment }}
-    env:
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-      PROJECT_NAME: ${{ vars.PROJECT_NAME || 'vkev2406-infrastructure-khanghv2406' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

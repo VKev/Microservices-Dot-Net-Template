@@ -11,8 +11,8 @@ on:
 
 # Top-level env falls back to repo vars if env vars are absent.
 env:
-  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-  PROJECT_NAME: ${{ vars.PROJECT_NAME || 'default' }}
+  AWS_REGION: ""
+  PROJECT_NAME: ""
 
 permissions:
   contents: read
@@ -68,13 +68,6 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.discover-services.outputs.services) }}
       fail-fast: false
-
-    # Pull env vars from the selected environment
-    env:
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-      PROJECT_NAME: ${{ vars.PROJECT_NAME || 'default' }}
-      # Optional: per-environment repo name
-      ECR_REPO_NAME: ${{ vars.ECR_REPO_NAME || format('{0}-{1}-ecr', vars.PROJECT_NAME || 'default', inputs.environment) }}
 
     steps:
       - name: Checkout
@@ -208,11 +201,24 @@ jobs:
     if: always()
     environment:
       name: ${{ inputs.environment }}
-    env:
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-      PROJECT_NAME: ${{ vars.PROJECT_NAME || 'default' }}
-      ECR_REPO_NAME: ${{ vars.ECR_REPO_NAME || format('{0}-{1}-ecr', vars.PROJECT_NAME || 'default', inputs.environment) }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load project/region from Terraform vars
+        run: python Terraform/scripts/export_tf_env.py >> "$GITHUB_ENV"
+        env:
+          TF_ENV_FALLBACK_PROJECT: ${{ env.PROJECT_NAME }}
+          TF_ENV_FALLBACK_REGION: ${{ env.AWS_REGION }}
+
+      - name: Derive ECR repo name from project/env
+        run: |
+          REPO="${{ env.ECR_REPO_NAME }}"
+          if [ -z "$REPO" ] || [ "$REPO" = "default" ]; then
+            REPO="${PROJECT_NAME:-default}-${{ inputs.environment }}-ecr"
+          fi
+          echo "ECR_REPO_NAME=$REPO" >> "$GITHUB_ENV"
+
       - name: Configure AWS credentials for summary
         uses: aws-actions/configure-aws-credentials@v4
         with:
