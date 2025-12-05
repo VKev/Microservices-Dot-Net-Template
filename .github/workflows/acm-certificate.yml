@@ -123,23 +123,39 @@ jobs:
           terraform_version: 1.9.8
 
       - name: Validate required inputs
-        run: |
-          set -euo pipefail
-          if [ -z "${ACM_DOMAIN_NAME}" ]; then
-            echo "ACM_DOMAIN_NAME is required (input domain_name or repo/env var ACM_DOMAIN_NAME)." >&2
-            exit 1
-          fi
-          if [ -z "${CLOUDFLARE_ZONE_ID}" ]; then
-            echo "CLOUDFLARE_ZONE_ID is required (input cloudflare_zone_id or repo/env var CLOUDFLARE_ZONE_ID)." >&2
-            exit 1
-          fi
-          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
-            echo "CLOUDFLARE_API_TOKEN secret is required." >&2
-            exit 1
-          fi
+        working-directory: Terraform
         env:
           ACM_DOMAIN_NAME: ${{ env.ACM_DOMAIN_NAME }}
           CLOUDFLARE_ZONE_ID: ${{ env.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Read token from merged tfvars if present
+          file_token=""
+          if [ -f 00-all.auto.tfvars.json ]; then
+            file_token=$(jq -r 'try(.cloudflare_api_token // "")' 00-all.auto.tfvars.json || echo "")
+          fi
+
+          env_token="${CLOUDFLARE_API_TOKEN:-}"
+
+          if [ -z "${ACM_DOMAIN_NAME}" ]; then
+            echo "ACM_DOMAIN_NAME is required (input or tfvars domain_name)." >&2
+            exit 1
+          fi
+          if [ -z "${CLOUDFLARE_ZONE_ID}" ]; then
+            echo "CLOUDFLARE_ZONE_ID is required (input or tfvars cloudflare_zone_id)." >&2
+            exit 1
+          fi
+          if [ -z "$env_token" ] && [ -z "$file_token" ]; then
+            echo "CLOUDFLARE_API_TOKEN is required (set env secret or provide cloudflare_api_token in tfvars)." >&2
+            exit 1
+          fi
+
+          # Export TF_VAR only when token provided via secret to avoid overriding tfvars with empty value
+          if [ -n "$env_token" ]; then
+            echo "TF_VAR_cloudflare_api_token=$env_token" >> "$GITHUB_ENV"
+          fi
 
       - name: Initialize Terraform (remote backend)
         working-directory: Terraform/acm
@@ -168,7 +184,6 @@ jobs:
           TF_VAR_domain_name: ${{ env.ACM_DOMAIN_NAME }}
           TF_VAR_subject_alternative_names: ${{ env.ACM_SANS }}
           TF_VAR_cloudflare_zone_id: ${{ env.CLOUDFLARE_ZONE_ID }}
-          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           TF_VAR_aws_region: ${{ env.AWS_REGION }}
         run: |
           set +e
@@ -198,7 +213,6 @@ jobs:
           TF_VAR_domain_name: ${{ env.ACM_DOMAIN_NAME }}
           TF_VAR_subject_alternative_names: ${{ env.ACM_SANS }}
           TF_VAR_cloudflare_zone_id: ${{ env.CLOUDFLARE_ZONE_ID }}
-          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           TF_VAR_aws_region: ${{ env.AWS_REGION }}
         run: |
           terraform apply -input=false -auto-approve tfplan
