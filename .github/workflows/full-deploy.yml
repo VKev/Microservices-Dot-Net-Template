@@ -23,6 +23,93 @@ permissions:
   contents: read
 
 jobs:
+  acm-check:
+    name: Check ACM (Cloudflare)
+    runs-on: ubuntu-latest
+    needs: bootstrap-backend
+    outputs:
+      needs_acm: ${{ steps.scan.outputs.needs_acm }}
+      certificate_arn: ${{ steps.scan.outputs.certificate_arn }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Merge tfvars (repo + sanitized + secrets)
+        working-directory: Terraform
+        env:
+          SECRETS_JSON: ${{ toJson(secrets) }}
+        run: |
+          set -euo pipefail
+
+          cp ../terraform-vars/*.auto.tfvars . 2>/dev/null || true
+          cp ../Terraform-vars/*.auto.tfvars . 2>/dev/null || true
+
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y jq
+          fi
+
+          echo "$SECRETS_JSON" \
+            | jq -r 'to_entries[] | select(.key | startswith("TERRAFORM_VARS_")) | .key' \
+            | while read -r key; do
+                suffix=${key#TERRAFORM_VARS_}
+                norm=$(echo "$suffix" \
+                  | tr '[:upper:]' '[:lower:]' \
+                  | sed 's/^\s\+//;s/\s\+$//' \
+                  | tr ' /\\' '___' )
+                value=$(jq -r --arg k "$key" '.[$k]' <<< "$SECRETS_JSON")
+                if echo "$value" | jq -e . >/dev/null 2>&1; then
+                  case "$norm" in
+                    *.auto.tfvars.json|*.tfvars.json) filename="$norm";;
+                    *.auto.tfvars|*.tfvars)           filename="$norm.json";;
+                    *)                                 filename="$norm.auto.tfvars.json";;
+                  esac
+                  printf '%s' "$value" > "$filename"
+                else
+                  case "$norm" in
+                    *.auto.tfvars|*.tfvars)           filename="$norm";;
+                    *.auto.tfvars.json|*.tfvars.json) filename="${norm%.json}";;
+                    *)                                 filename="$norm.auto.tfvars";;
+                  esac
+                  printf '%s' "$value" > "$filename"
+                fi
+              done
+
+          sudo apt-get update -y >/dev/null
+          sudo apt-get install -y python3-pip >/dev/null
+          python3 -m pip install --user python-hcl2 >/dev/null
+          export PATH="$HOME/.local/bin:$PATH"
+          python3 scripts/merge_tfvars.py
+
+          for f in *.auto.tfvars *.auto.tfvars.json; do
+            [ "$f" = "00-all.auto.tfvars.json" ] && continue || true
+            rm -f "$f" || true
+          done
+
+      - name: Check for ACM certificate when Cloudflare enabled
+        id: scan
+        working-directory: Terraform
+        run: |
+          set -euo pipefail
+          file="00-all.auto.tfvars.json"
+          cert=""
+          use_cf="false"
+          if [ -f "$file" ]; then
+            cert=$(jq -r 'try(.certificate_arn // "")' "$file" || echo "")
+            use_cf=$(jq -r 'try(.use_cloudflare // false)' "$file" || echo "false")
+          fi
+          needs_acm="false"
+          if [ "$use_cf" = "true" ] && [ -z "$cert" ] && [ "${{ inputs.terraform_action }}" != "destroy" ]; then
+            needs_acm="true"
+          fi
+          echo "certificate_arn=$cert" >> "$GITHUB_OUTPUT"
+          echo "needs_acm=$needs_acm" >> "$GITHUB_OUTPUT"
+
+      - name: Require ACM when Cloudflare enabled
+        if: steps.scan.outputs.needs_acm == 'true'
+        run: |
+          echo "::error::Cloudflare is enabled but certificate_arn is empty. Run the 'Request ACM Certificate (Cloudflare DNS)' workflow first, then re-run this workflow."
+          exit 1
+
   # Step 1: Bootstrap Terraform Backend
   bootstrap-backend:
     name: Bootstrap Terraform Backend
@@ -195,8 +282,8 @@ jobs:
   terraform-deploy:
     name: Terraform Deploy
     runs-on: ubuntu-latest
-    needs: [bootstrap-backend, build-and-push]
-    if: always() && needs.bootstrap-backend.result == 'success'
+    needs: [bootstrap-backend, build-and-push, acm-check]
+    if: always() && needs.bootstrap-backend.result == 'success' && needs.acm-check.result != 'failure'
     outputs:
       alb_dns_name: ${{ steps.terraform-outputs.outputs.alb_dns_name }}
       cloudfront_https_url: ${{ steps.terraform-outputs.outputs.cloudfront_https_url }}

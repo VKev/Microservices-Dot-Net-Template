@@ -26,6 +26,9 @@ resource "cloudflare_zone_settings_override" "zone_ssl_mode" {
   settings {
     # Use Strict only when an ACM cert is attached to the ALB; otherwise keep Flexible.
     ssl = var.certificate_arn != null ? "strict" : "flexible"
+
+    # Force Cloudflare edge to redirect HTTP -> HTTPS for the entire zone.
+    always_use_https = "on"
   }
 }
 
