@@ -101,7 +101,8 @@ jobs:
           ls -la 00-all.auto.tfvars.json 2>/dev/null || true
 
       - name: Refresh project/region/domain from merged tfvars
-        run: python Terraform/scripts/export_tf_env.py >> "$GITHUB_ENV"
+        working-directory: Terraform
+        run: python scripts/export_tf_env.py >> "$GITHUB_ENV"
         env:
           TF_ENV_FALLBACK_PROJECT: ${{ env.PROJECT_NAME }}
           TF_ENV_FALLBACK_REGION: ${{ env.AWS_REGION }}
