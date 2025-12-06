@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guest-microservice
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: guest-microservice
+  template:
+    metadata:
+      labels:
+        app: guest-microservice
+    spec:
+      containers:
+        - name: guest-microservice
+          image: guest-microservice:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5001
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+            - name: ASPNETCORE_URLS
+              value: http://+:5001
+            - name: Database__Host
+              value: postgres
+            - name: Database__Port
+              value: "5432"
+            - name: Database__Name
+              value: guestdb
+            - name: Database__Username
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: postgres-user
+            - name: Database__Password
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: postgres-password
+            - name: Database__Provider
+              value: postgres
+            - name: RabbitMq__Host
+              value: rabbit-mq
+            - name: RabbitMq__Port
+              value: "5672"
+            - name: RabbitMq__Username
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: rabbitmq-username
+            - name: RabbitMq__Password
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: rabbitmq-password
+            - name: Redis__Host
+              value: redis
+            - name: Redis__Password
+              valueFrom:
+                secretKeyRef:
+                  name: redis-auth
+                  key: redis-password
+            - name: Redis__Port
+              value: "6379"
+            - name: Jwt__SecretKey
+              value: changeme-at-least-32-chars----------------
+            - name: Jwt__Issuer
+              value: UserMicroservice
+            - name: Jwt__Audience
+              value: MicroservicesApp
+            - name: Jwt__ExpirationMinutes
+              value: "60"
+            - name: AutoApply__Migrations
+              value: "true"
+          resources:
+            requests: { cpu: "100m", memory: "192Mi" }
+            limits: { cpu: "250m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: guest-microservice
+  namespace: microservices
+spec:
+  type: NodePort
+  selector:
+    app: guest-microservice
+  ports:
+    - port: 5001
+      targetPort: 5001
+      nodePort: 30001

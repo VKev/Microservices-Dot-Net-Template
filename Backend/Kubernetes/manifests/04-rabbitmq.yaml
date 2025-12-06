@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        fsGroupChangePolicy: "OnRootMismatch"
+      containers:
+        - name: rabbit-mq
+          image: rabbitmq:3-management
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: rabbitmq-username
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: rabbitmq-password
+            - name: RABBITMQ_ERLANG_COOKIE
+              value: changeme-cookie
+          resources:
+            requests: { cpu: "100m", memory: "192Mi" }
+            limits: { cpu: "250m", memory: "320Mi" }
+          livenessProbe:
+            exec: { command: ["rabbitmq-diagnostics", "-q", "ping"] }
+            initialDelaySeconds: 70
+            periodSeconds: 20
+            timeoutSeconds: 30
+            failureThreshold: 5
+          readinessProbe:
+            exec: { command: ["rabbitmq-diagnostics", "-q", "ping"] }
+            initialDelaySeconds: 50
+            periodSeconds: 15
+            timeoutSeconds: 20
+            failureThreshold: 5
+          volumeMounts:
+            - name: rabbitmq-data
+              mountPath: /var/lib/rabbitmq
+      volumes:
+        - name: rabbitmq-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbit-mq
+  namespace: microservices
+spec:
+  type: NodePort
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+      nodePort: 30672
+    - name: management
+      port: 15672
+      targetPort: 15672
+      nodePort: 31672

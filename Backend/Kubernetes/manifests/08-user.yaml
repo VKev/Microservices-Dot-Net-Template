@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-microservice
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-microservice
+  template:
+    metadata:
+      labels:
+        app: user-microservice
+    spec:
+      containers:
+        - name: user-microservice
+          image: user-microservice:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5002
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+            - name: ASPNETCORE_URLS
+              value: http://+:5002
+            - name: Database__Host
+              value: postgres
+            - name: Database__Port
+              value: "5432"
+            - name: Database__Name
+              value: userdb
+            - name: Database__Username
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: postgres-user
+            - name: Database__Password
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: postgres-password
+            - name: Database__Provider
+              value: postgres
+            - name: Database__SslMode
+              value: Disable
+            - name: RabbitMq__Host
+              value: rabbit-mq
+            - name: RabbitMq__Port
+              value: "5672"
+            - name: RabbitMq__Username
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: rabbitmq-username
+            - name: RabbitMq__Password
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-auth
+                  key: rabbitmq-password
+            - name: Redis__Host
+              value: redis
+            - name: Redis__Password
+              valueFrom:
+                secretKeyRef:
+                  name: redis-auth
+                  key: redis-password
+            - name: Redis__Port
+              value: "6379"
+            - name: Jwt__SecretKey
+              value: changeme-at-least-32-chars----------------
+            - name: Jwt__Issuer
+              value: UserMicroservice
+            - name: Jwt__Audience
+              value: MicroservicesApp
+            - name: Jwt__ExpirationMinutes
+              value: "60"
+            - name: Cors__AllowedOrigins__0
+              value: http://localhost:5173
+            - name: Cors__AllowedOrigins__1
+              value: https://your-frontend.example.com
+            - name: Cors__AllowedOrigins__2
+              value: http://localhost:2406
+            - name: AutoApply__Migrations
+              value: "true"
+          resources:
+            requests: { cpu: "100m", memory: "192Mi" }
+            limits: { cpu: "250m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-microservice
+  namespace: microservices
+spec:
+  type: NodePort
+  selector:
+    app: user-microservice
+  ports:
+    - port: 5002
+      targetPort: 5002
+      nodePort: 30002

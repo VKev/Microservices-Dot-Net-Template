@@ -1,6 +1,27 @@
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 name: microservices-local
+kubeadmConfigPatches:
+  # Simulate t3.small (2 vCPU, 2 GiB) by reserving a portion of node resources
+  # for system/kube components and tightening eviction thresholds.
+  - |
+    kind: InitConfiguration
+    apiVersion: kubeadm.k8s.io/v1beta3
+    nodeRegistration:
+      kubeletExtraArgs:
+        system-reserved: "cpu=300m,memory=300Mi"
+        kube-reserved: "cpu=300m,memory=300Mi"
+        eviction-hard: "memory.available<256Mi,nodefs.available<10%"
+        max-pods: "40"
+  - |
+    kind: JoinConfiguration
+    apiVersion: kubeadm.k8s.io/v1beta3
+    nodeRegistration:
+      kubeletExtraArgs:
+        system-reserved: "cpu=300m,memory=300Mi"
+        kube-reserved: "cpu=300m,memory=300Mi"
+        eviction-hard: "memory.available<256Mi,nodefs.available<10%"
+        max-pods: "40"
 nodes:
   - role: control-plane
     extraPortMappings:

@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: api-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ENABLE_SWAGGER_UI
+              value: "true"
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+            - name: ASPNETCORE_URLS
+              value: http://+:8080
+            - name: Services__User__Host
+              value: user-microservice
+            - name: Services__User__Port
+              value: "5002"
+            - name: Services__Guest__Host
+              value: guest-microservice
+            - name: Services__Guest__Port
+              value: "5001"
+            - name: Jwt__SecretKey
+              value: changeme-at-least-32-chars----------------
+            - name: Jwt__Issuer
+              value: UserMicroservice
+            - name: Jwt__Audience
+              value: MicroservicesApp
+            - name: Jwt__ExpirationMinutes
+              value: "60"
+          resources:
+            requests: { cpu: "100m", memory: "160Mi" }
+            limits: { cpu: "250m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: microservices
+spec:
+  type: NodePort
+  selector:
+    app: api-gateway
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 32080

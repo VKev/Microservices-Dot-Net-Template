@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-auth
+                  key: postgres-password
+          resources:
+            requests: { cpu: "100m", memory: "192Mi" }
+            limits: { cpu: "250m", memory: "256Mi" }
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: postgres-init
+              mountPath: /docker-entrypoint-initdb.d/init.sql
+              subPath: init.sql
+      volumes:
+        - name: postgres-data
+          emptyDir: {}
+        - name: postgres-init
+          configMap:
+            name: postgres-init-sql
+            items:
+              - key: init.sql
+                path: init.sql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: microservices
+spec:
+  type: NodePort
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+      nodePort: 30032

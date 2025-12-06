@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: microservices
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-auth
+  namespace: microservices
+type: Opaque
+stringData:
+  redis-password: "changeme"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-auth
+  namespace: microservices
+type: Opaque
+stringData:
+  rabbitmq-username: "rabbitmq"
+  rabbitmq-password: "changeme"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-auth
+  namespace: microservices
+type: Opaque
+stringData:
+  postgres-user: "postgres"
+  postgres-password: "changeme"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-sql
+  namespace: microservices
+data:
+  init.sql: |
+    CREATE DATABASE guestdb;
+    CREATE DATABASE userdb;
+    GRANT ALL PRIVILEGES ON DATABASE guestdb TO postgres;
+    GRANT ALL PRIVILEGES ON DATABASE userdb TO postgres;
