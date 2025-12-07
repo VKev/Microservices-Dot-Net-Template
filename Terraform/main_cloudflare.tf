@@ -2,6 +2,11 @@ provider "cloudflare" {
   api_token = var.cloudflare_api_token
 }
 
+data "cloudflare_zone" "selected" {
+  count   = var.use_cloudflare ? 1 : 0
+  zone_id = var.cloudflare_zone_id
+}
+
 locals {
   # Cloudflare becomes the CDN; always point to ALB. Also expose a static assets record when provided.
   cloudflare_origin   = module.alb.alb_dns_name
@@ -45,64 +50,44 @@ resource "cloudflare_record" "static_assets" {
   allow_overwrite = true
 }
 
-resource "cloudflare_ruleset" "static_assets_origin" {
+resource "cloudflare_worker_script" "static_assets" {
   count = var.use_cloudflare && var.static_assets_bucket_domain_name != "" ? 1 : 0
 
-  zone_id = var.cloudflare_zone_id
-  name    = "static-assets-origin"
-  kind    = "zone"
-  phase   = "http_request_origin"
+  account_id = data.cloudflare_zone.selected[0].account_id
+  name       = "${var.project_name}-static-proxy"
+  content    = <<-EOF
+    export default {
+      async fetch(request, env, ctx) {
+        const url = new URL(request.url);
+        const bucketHost = "${var.static_assets_bucket_domain_name}";
 
-  rules {
-    description = "Send static.vkev.me traffic to the S3 bucket hostname"
-    expression  = "http.host eq \"${local.static_record_fqdn}\""
-    action      = "set_config"
+        if (request.method !== "GET" && request.method !== "HEAD") {
+          return new Response("Method Not Allowed", { status: 405 });
+        }
 
-    action_parameters {
-      origin {
-        host = var.static_assets_bucket_domain_name
-        port = 443
+        // Build origin URL to S3 bucket, preserving path/query.
+        const originUrl = `https://$${bucketHost}$${url.pathname}$${url.search}`;
+
+        const headers = new Headers(request.headers);
+        headers.set("Host", bucketHost);
+
+        const init = {
+          method: request.method,
+          headers,
+          redirect: "follow",
+          cf: { cacheEverything: true, cacheTtl: 86400 }
+        };
+
+        return fetch(originUrl, init);
       }
-
-      sni {
-        value = var.static_assets_bucket_domain_name
-      }
-    }
-  }
+    };
+  EOF
 }
 
-resource "cloudflare_ruleset" "static_assets_headers" {
+resource "cloudflare_worker_route" "static_assets" {
   count = var.use_cloudflare && var.static_assets_bucket_domain_name != "" ? 1 : 0
 
-  zone_id = var.cloudflare_zone_id
-  name    = "static-assets-host-header"
-  kind    = "zone"
-  phase   = "http_request_transform"
-
-  rules {
-    description = "Force Host header to the S3 bucket for static.vkev.me"
-    expression  = "http.host eq \"${local.static_record_fqdn}\""
-    action      = "rewrite"
-
-    action_parameters {
-      headers {
-        name      = "Host"
-        operation = "set"
-        value     = var.static_assets_bucket_domain_name
-      }
-    }
-  }
-}
-
-resource "cloudflare_page_rule" "static_assets_cache" {
-  count = var.use_cloudflare && var.static_assets_bucket_domain_name != "" ? 1 : 0
-
-  zone_id  = var.cloudflare_zone_id
-  target   = "https://${local.static_record_fqdn}/*"
-  priority = 1
-
-  actions {
-    cache_level    = "cache_everything"
-    edge_cache_ttl = 86400 # 1 day
-  }
+  zone_id     = var.cloudflare_zone_id
+  pattern     = "${local.static_record_fqdn}/*"
+  script_name = cloudflare_worker_script.static_assets[0].name
 }
