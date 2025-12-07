@@ -94,7 +94,7 @@ resource "cloudflare_page_rule" "static_assets_cache" {
 }
 
 # Worker to preserve the S3 Host header for presigned URLs while keeping caching at the edge.
-resource "cloudflare_worker_script" "static_assets_proxy" {
+resource "cloudflare_workers_script" "static_assets_proxy" {
   count = var.use_cloudflare && var.static_assets_bucket_domain_name != "" ? 1 : 0
 
   account_id = data.cloudflare_zone.selected[0].account_id
@@ -128,10 +128,10 @@ resource "cloudflare_worker_script" "static_assets_proxy" {
   EOF
 }
 
-resource "cloudflare_worker_route" "static_assets_proxy" {
+resource "cloudflare_workers_route" "static_assets_proxy" {
   count = var.use_cloudflare && var.static_assets_bucket_domain_name != "" ? 1 : 0
 
   zone_id     = var.cloudflare_zone_id
   pattern     = "${local.static_record_fqdn}/*"
-  script_name = cloudflare_worker_script.static_assets_proxy[0].name
+  script_name = cloudflare_workers_script.static_assets_proxy[0].name
 }
