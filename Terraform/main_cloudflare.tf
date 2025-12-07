@@ -97,9 +97,11 @@ resource "cloudflare_page_rule" "static_assets_cache" {
 resource "cloudflare_workers_script" "static_assets_proxy" {
   count = var.use_cloudflare && var.static_assets_bucket_domain_name != "" ? 1 : 0
 
-  account_id = data.cloudflare_zone.selected[0].account_id
-  name       = "${var.project_name}-static-proxy"
-  content    = <<-EOF
+  account_id         = data.cloudflare_zone.selected[0].account_id
+  name               = "${var.project_name}-static-proxy"
+  module             = true
+  compatibility_date = "2025-01-01"
+  content            = <<-EOF
     export default {
       async fetch(request, env, ctx) {
         const url = new URL(request.url);
