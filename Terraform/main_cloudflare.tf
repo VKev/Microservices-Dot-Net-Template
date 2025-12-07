@@ -54,7 +54,7 @@ resource "cloudflare_ruleset" "static_assets_origin" {
   phase   = "http_request_origin"
 
   rules {
-    description = "Send static.vkev.me traffic to the S3 bucket hostname with matching SNI/Host headers"
+    description = "Send static.vkev.me traffic to the S3 bucket hostname"
     expression  = "http.host eq \"${local.static_record_fqdn}\""
     action      = "set_config"
 
@@ -67,7 +67,24 @@ resource "cloudflare_ruleset" "static_assets_origin" {
       sni {
         value = var.static_assets_bucket_domain_name
       }
+    }
+  }
+}
 
+resource "cloudflare_ruleset" "static_assets_headers" {
+  count = var.use_cloudflare && var.static_assets_bucket_domain_name != "" ? 1 : 0
+
+  zone_id = var.cloudflare_zone_id
+  name    = "static-assets-host-header"
+  kind    = "zone"
+  phase   = "http_request_transform"
+
+  rules {
+    description = "Force Host header to the S3 bucket for static.vkev.me"
+    expression  = "http.host eq \"${local.static_record_fqdn}\""
+    action      = "rewrite"
+
+    action_parameters {
       headers {
         name      = "Host"
         operation = "set"
