@@ -5,6 +5,7 @@ provider "cloudflare" {
 locals {
   # Cloudflare becomes the CDN; always point to ALB. Also expose a static assets record when provided.
   cloudflare_origin      = module.alb.alb_dns_name
+  primary_record_fqdn    = var.cloudflare_record_name == "@" ? var.domain_name : "${var.cloudflare_record_name}.${var.domain_name}"
   static_record_name     = var.cloudflare_record_name == "@" ? "static" : "${var.cloudflare_record_name}-static"
   static_record_fqdn     = local.static_record_name == "@" ? var.domain_name : "${local.static_record_name}.${var.domain_name}"
 }
@@ -42,6 +43,80 @@ resource "cloudflare_record" "static_assets" {
   proxied = true
   ttl     = 1 # Auto
   allow_overwrite = true
+}
+
+# Route `/s3/*` on the primary hostname directly to the S3 bucket (strip the /s3 prefix).
+resource "cloudflare_ruleset" "primary_s3_origin" {
+  count   = var.use_cloudflare && var.static_assets_bucket_domain_name != "" ? 1 : 0
+  zone_id = var.cloudflare_zone_id
+  name    = "Primary host S3 origin for /s3"
+  phase   = "http_request_origin"
+  kind    = "zone"
+
+  rules {
+    description = "Send /s3/* on ${local.primary_record_fqdn} to S3 origin"
+    expression  = "(http.host eq \"${local.primary_record_fqdn}\") and (starts_with(http.request.uri.path, \"/s3\"))"
+    action      = "route"
+
+    action_parameters {
+      host_header = var.static_assets_bucket_domain_name
+      origin {
+        host = var.static_assets_bucket_domain_name
+      }
+    }
+  }
+}
+
+# Rewrite /s3/* -> /* so S3 sees the correct object key.
+resource "cloudflare_ruleset" "primary_s3_rewrite" {
+  count   = var.use_cloudflare && var.static_assets_bucket_domain_name != "" ? 1 : 0
+  zone_id = var.cloudflare_zone_id
+  name    = "Primary host S3 path rewrite"
+  phase   = "http_request_transform"
+  kind    = "zone"
+
+  rules {
+    description = "Rewrite /s3 prefix away for S3 origin"
+    expression  = "(http.host eq \"${local.primary_record_fqdn}\") and (starts_with(http.request.uri.path, \"/s3\"))"
+    action      = "rewrite"
+
+    action_parameters {
+      uri {
+        path {
+          # Remove leading /s3 or /s3/ while preserving the rest of the path.
+          expression = "regex_replace(http.request.uri.path, \"^/s3/?\", \"/\")"
+        }
+      }
+    }
+  }
+}
+
+# Cache `/s3/*` responses on the primary hostname.
+resource "cloudflare_ruleset" "primary_s3_cache" {
+  count   = var.use_cloudflare && var.static_assets_bucket_domain_name != "" ? 1 : 0
+  zone_id = var.cloudflare_zone_id
+  name    = "Primary host S3 cache settings"
+  phase   = "http_request_cache_settings"
+  kind    = "zone"
+
+  rules {
+    description = "Cache S3 assets served via /s3 on ${local.primary_record_fqdn}"
+    expression  = "(http.host eq \"${local.primary_record_fqdn}\") and (starts_with(http.request.uri.path, \"/s3\"))"
+    action      = "set_cache_settings"
+
+    action_parameters {
+      cache = true
+
+      edge_ttl {
+        mode    = "override_origin"
+        default = 3600
+      }
+
+      browser_ttl {
+        mode = "respect_origin"
+      }
+    }
+  }
 }
 
 # Ensure Cloudflare talks to S3 using the bucket hostname (Host header + origin),
