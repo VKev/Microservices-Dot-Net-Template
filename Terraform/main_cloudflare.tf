@@ -68,37 +68,24 @@ resource "cloudflare_ruleset" "static_assets_origin" {
         value = var.static_assets_bucket_domain_name
       }
 
-      host_header = var.static_assets_bucket_domain_name
+      headers {
+        name      = "Host"
+        operation = "set"
+        value     = var.static_assets_bucket_domain_name
+      }
     }
   }
 }
 
-resource "cloudflare_ruleset" "static_assets_cache" {
+resource "cloudflare_page_rule" "static_assets_cache" {
   count = var.use_cloudflare && var.static_assets_bucket_domain_name != "" ? 1 : 0
 
-  zone_id = var.cloudflare_zone_id
-  name    = "static-assets-cache"
-  kind    = "zone"
-  phase   = "http_request_cache_settings"
+  zone_id  = var.cloudflare_zone_id
+  target   = "https://${local.static_record_fqdn}/*"
+  priority = 1
 
-  rules {
-    description = "Cache static assets at the edge"
-    expression  = "http.host eq \"${local.static_record_fqdn}\""
-    action      = "set_cache_settings"
-
-    action_parameters {
-      cache = true
-
-      edge_ttl {
-        mode    = "override_origin"
-        default = 86400 # 1 day
-      }
-
-      browser_ttl {
-        mode = "respect_origin"
-      }
-
-      respect_strong_etags = true
-    }
+  actions {
+    cache_level    = "cache_everything"
+    edge_cache_ttl = 86400 # 1 day
   }
 }
