@@ -258,21 +258,24 @@ jobs:
           CF_API_TOKEN=$(jq -r '.cloudflare_api_token // empty' "$FILE")
           CF_ZONE_ID=$(jq -r '.cloudflare_zone_id // empty' "$FILE")
           CF_DOMAIN_NAME=$(jq -r '.domain_name // empty' "$FILE")
+          CF_USER_EMAIL=$(jq -r '.cloudflare_user_email // .cloudflare_email // empty' "$FILE")
 
-          if [ -z "$CF_ACCOUNT_ID" ] || [ -z "$CF_API_TOKEN" ]; then
-            echo "::error::cloudflare_account_id or cloudflare_api_token missing from merged tfvars" >&2
+          if [ -z "$CF_ACCOUNT_ID" ] || [ -z "$CF_API_TOKEN" ] || [ -z "$CF_USER_EMAIL" ]; then
+            echo "::error::cloudflare_account_id, cloudflare_api_token, or cloudflare_user_email missing from merged tfvars" >&2
             exit 1
           fi
 
           echo "::add-mask::$CF_API_TOKEN"
           echo "::add-mask::$CF_ACCOUNT_ID"
           [ -n "$CF_ZONE_ID" ] && echo "::add-mask::$CF_ZONE_ID"
+          echo "::add-mask::$CF_USER_EMAIL"
 
           {
             echo "CF_ACCOUNT_ID=$CF_ACCOUNT_ID"
             echo "CF_API_TOKEN=$CF_API_TOKEN"
             [ -n "$CF_ZONE_ID" ] && echo "CF_ZONE_ID=$CF_ZONE_ID"
             [ -n "$CF_DOMAIN_NAME" ] && echo "CF_DOMAIN_NAME=$CF_DOMAIN_NAME"
+            echo "CF_USER_EMAIL=$CF_USER_EMAIL"
           } >> "$GITHUB_ENV"
 
       - name: Build Cloudflare nuke config
@@ -334,18 +337,20 @@ jobs:
         env:
           CF_API_TOKEN: ${{ env.CF_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID }}
+          CF_USER_EMAIL: ${{ env.CF_USER_EMAIL }}
         run: |
           set -euo pipefail
-          if [ -z "${CF_ACCOUNT_ID:-}" ] || [ -z "${CF_API_TOKEN:-}" ]; then
+          if [ -z "${CF_ACCOUNT_ID:-}" ] || [ -z "${CF_API_TOKEN:-}" ] || [ -z "${CF_USER_EMAIL:-}" ]; then
             echo "::error::Missing Cloudflare credentials" >&2
             exit 1
           fi
 
           printf 'yes\n' | ./cf-nuke-linux-amd64 nuke \
-            --mode token \
+            --mode account \
             -c cloudflare_nuke/nuke-config.final.yaml \
             -a "$CF_ACCOUNT_ID" \
             -k "$CF_API_TOKEN" \
+            -u "$CF_USER_EMAIL" \
             --no-dry-run
 
       - name: Finished
