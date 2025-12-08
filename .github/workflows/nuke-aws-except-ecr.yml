@@ -284,41 +284,41 @@ jobs:
           set -euo pipefail
           python3 -m pip install --user --quiet pyyaml
           python3 - <<'PY'
-import os
-from pathlib import Path
+          import os
+          from pathlib import Path
 
-import yaml
+          import yaml
 
-base = Path("cloudflare_nuke/nuke-config.yaml")
-final = Path("cloudflare_nuke/nuke-config.final.yaml")
+          base = Path("cloudflare_nuke/nuke-config.yaml")
+          final = Path("cloudflare_nuke/nuke-config.final.yaml")
 
-with base.open("r", encoding="utf-8") as f:
-    data = yaml.safe_load(f) or {}
+          with base.open("r", encoding="utf-8") as f:
+              data = yaml.safe_load(f) or {}
 
-if not isinstance(data, dict):
-    raise SystemExit("Base Cloudflare nuke config must be a mapping")
+          if not isinstance(data, dict):
+              raise SystemExit("Base Cloudflare nuke config must be a mapping")
 
-zones = data.get("zones") or {}
-zone_excludes = zones.get("excludes") or []
-domain = os.environ.get("CF_DOMAIN_NAME", "").strip()
-if domain and domain not in zone_excludes:
-    zone_excludes.append(domain)
-data["zones"] = {"excludes": zone_excludes}
+          zones = data.get("zones") or {}
+          zone_excludes = zones.get("excludes") or []
+          domain = os.environ.get("CF_DOMAIN_NAME", "").strip()
+          if domain and domain not in zone_excludes:
+              zone_excludes.append(domain)
+          data["zones"] = {"excludes": zone_excludes}
 
-resource_ids = data.get("resource-ids") or {}
-rid_excludes = resource_ids.get("excludes") or []
-zone_id = os.environ.get("CF_ZONE_ID", "").strip()
-if zone_id and not any(isinstance(item, dict) and item.get("id") == zone_id for item in rid_excludes):
-    rid_excludes.append({"resourceType": "zone", "id": zone_id})
-data["resource-ids"] = {"excludes": rid_excludes}
+          resource_ids = data.get("resource-ids") or {}
+          rid_excludes = resource_ids.get("excludes") or []
+          zone_id = os.environ.get("CF_ZONE_ID", "").strip()
+          if zone_id and not any(isinstance(item, dict) and item.get("id") == zone_id for item in rid_excludes):
+              rid_excludes.append({"resourceType": "zone", "id": zone_id})
+          data["resource-ids"] = {"excludes": rid_excludes}
 
-final.parent.mkdir(parents=True, exist_ok=True)
-with final.open("w", encoding="utf-8") as f:
-    yaml.safe_dump(data, f, sort_keys=False)
+          final.parent.mkdir(parents=True, exist_ok=True)
+          with final.open("w", encoding="utf-8") as f:
+              yaml.safe_dump(data, f, sort_keys=False)
 
-print("----- Final Cloudflare nuke config -----")
-print(final.read_text())
-PY
+          print("----- Final Cloudflare nuke config -----")
+          print(final.read_text())
+          PY
 
       - name: Download cf-nuke
         working-directory: Terraform
