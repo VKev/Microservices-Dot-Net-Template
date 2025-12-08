@@ -1,0 +1,12 @@
+# Base cf-nuke configuration. GitHub Actions injects the active zone/domain
+# into `zones.excludes` at runtime so DNS for the primary domain is preserved.
+zones:
+  excludes: []
+
+resource-types:
+  excludes:
+    # Keep API tokens intact (used by the workflow itself).
+    - AccountToken
+
+resource-ids:
+  excludes: []

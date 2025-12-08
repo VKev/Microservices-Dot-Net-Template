@@ -181,3 +181,172 @@ jobs:
 
       - name: Finished
         run: echo "Nuke completed"
+
+  cloudflare-nuke:
+    name: cloudflare-nuke
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.confirm == 'NUKE' }}
+    environment:
+      name: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Merge tfvars (repo + sanitized + secrets)
+        working-directory: Terraform
+        env:
+          SECRETS_JSON: ${{ toJson(secrets) }}
+        run: |
+          set -euo pipefail
+
+          cp ../terraform-vars/*.auto.tfvars . 2>/dev/null || true
+          cp ../Terraform-vars/*.auto.tfvars . 2>/dev/null || true
+
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y jq
+          fi
+
+          echo "$SECRETS_JSON" \
+            | jq -r 'to_entries[] | select(.key | startswith("TERRAFORM_VARS_")) | .key' \
+            | while read -r key; do
+                suffix=${key#TERRAFORM_VARS_}
+                norm=$(echo "$suffix" \
+                  | tr '[:upper:]' '[:lower:]' \
+                  | sed 's/^\s\+//;s/\s\+$//' \
+                  | tr ' /\\' '___' )
+                value=$(jq -r --arg k "$key" '.[$k]' <<< "$SECRETS_JSON")
+                if echo "$value" | jq -e . >/dev/null 2>&1; then
+                  case "$norm" in
+                    *.auto.tfvars.json|*.tfvars.json) filename="$norm";;
+                    *.auto.tfvars|*.tfvars)           filename="$norm.json";;
+                    *)                                 filename="$norm.auto.tfvars.json";;
+                  esac
+                  printf '%s' "$value" > "$filename"
+                else
+                  case "$norm" in
+                    *.auto.tfvars|*.tfvars)           filename="$norm";;
+                    *.auto.tfvars.json|*.tfvars.json) filename="${norm%.json}";;
+                    *)                                 filename="$norm.auto.tfvars";;
+                  esac
+                  printf '%s' "$value" > "$filename"
+                fi
+              done
+
+          sudo apt-get update -y >/dev/null
+          sudo apt-get install -y python3-pip >/dev/null
+          python3 -m pip install --user python-hcl2 >/dev/null
+          export PATH="$HOME/.local/bin:$PATH"
+          python3 scripts/merge_tfvars.py
+
+          for f in *.auto.tfvars *.auto.tfvars.json; do
+            [ "$f" = "00-all.auto.tfvars.json" ] && continue || true
+            rm -f "$f" || true
+          done
+
+      - name: Load Cloudflare values from tfvars
+        id: cfvars
+        working-directory: Terraform
+        run: |
+          set -euo pipefail
+          FILE="00-all.auto.tfvars.json"
+          if [ ! -f "$FILE" ]; then
+            echo "::error::Merged tfvars not found: $FILE" >&2
+            exit 1
+          fi
+
+          CF_ACCOUNT_ID=$(jq -r '.cloudflare_account_id // empty' "$FILE")
+          CF_API_TOKEN=$(jq -r '.cloudflare_api_token // empty' "$FILE")
+          CF_ZONE_ID=$(jq -r '.cloudflare_zone_id // empty' "$FILE")
+          CF_DOMAIN_NAME=$(jq -r '.domain_name // empty' "$FILE")
+
+          if [ -z "$CF_ACCOUNT_ID" ] || [ -z "$CF_API_TOKEN" ]; then
+            echo "::error::cloudflare_account_id or cloudflare_api_token missing from merged tfvars" >&2
+            exit 1
+          fi
+
+          echo "::add-mask::$CF_API_TOKEN"
+          echo "::add-mask::$CF_ACCOUNT_ID"
+          [ -n "$CF_ZONE_ID" ] && echo "::add-mask::$CF_ZONE_ID"
+
+          {
+            echo "CF_ACCOUNT_ID=$CF_ACCOUNT_ID"
+            echo "CF_API_TOKEN=$CF_API_TOKEN"
+            [ -n "$CF_ZONE_ID" ] && echo "CF_ZONE_ID=$CF_ZONE_ID"
+            [ -n "$CF_DOMAIN_NAME" ] && echo "CF_DOMAIN_NAME=$CF_DOMAIN_NAME"
+          } >> "$GITHUB_ENV"
+
+      - name: Build Cloudflare nuke config
+        working-directory: Terraform
+        env:
+          CF_DOMAIN_NAME: ${{ env.CF_DOMAIN_NAME }}
+          CF_ZONE_ID: ${{ env.CF_ZONE_ID }}
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user --quiet pyyaml
+          python3 - <<'PY'
+import os
+from pathlib import Path
+
+import yaml
+
+base = Path("cloudflare_nuke/nuke-config.yaml")
+final = Path("cloudflare_nuke/nuke-config.final.yaml")
+
+with base.open("r", encoding="utf-8") as f:
+    data = yaml.safe_load(f) or {}
+
+if not isinstance(data, dict):
+    raise SystemExit("Base Cloudflare nuke config must be a mapping")
+
+zones = data.get("zones") or {}
+zone_excludes = zones.get("excludes") or []
+domain = os.environ.get("CF_DOMAIN_NAME", "").strip()
+if domain and domain not in zone_excludes:
+    zone_excludes.append(domain)
+data["zones"] = {"excludes": zone_excludes}
+
+resource_ids = data.get("resource-ids") or {}
+rid_excludes = resource_ids.get("excludes") or []
+zone_id = os.environ.get("CF_ZONE_ID", "").strip()
+if zone_id and not any(isinstance(item, dict) and item.get("id") == zone_id for item in rid_excludes):
+    rid_excludes.append({"resourceType": "zone", "id": zone_id})
+data["resource-ids"] = {"excludes": rid_excludes}
+
+final.parent.mkdir(parents=True, exist_ok=True)
+with final.open("w", encoding="utf-8") as f:
+    yaml.safe_dump(data, f, sort_keys=False)
+
+print("----- Final Cloudflare nuke config -----")
+print(final.read_text())
+PY
+
+      - name: Download cf-nuke
+        working-directory: Terraform
+        run: |
+          set -euo pipefail
+          VERSION="v0.3"
+          curl -fL -o cf-nuke-linux-amd64 "https://github.com/arafato/cf-nuke/releases/download/${VERSION}/cf-nuke-linux-amd64"
+          echo "9a44b6ec8463fe8db2043d546796b97eada620981b33a2846b0953bc4c3ea74d  cf-nuke-linux-amd64" | sha256sum -c -
+          chmod +x cf-nuke-linux-amd64
+
+      - name: Run cf-nuke (DESTRUCTIVE)
+        working-directory: Terraform
+        env:
+          CF_API_TOKEN: ${{ env.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CF_ACCOUNT_ID:-}" ] || [ -z "${CF_API_TOKEN:-}" ]; then
+            echo "::error::Missing Cloudflare credentials" >&2
+            exit 1
+          fi
+
+          printf 'yes\n' | ./cf-nuke-linux-amd64 nuke \
+            --mode token \
+            -c cloudflare_nuke/nuke-config.final.yaml \
+            -a "$CF_ACCOUNT_ID" \
+            -k "$CF_API_TOKEN" \
+            --no-dry-run
+
+      - name: Finished
+        run: echo "Cloudflare nuke completed"
