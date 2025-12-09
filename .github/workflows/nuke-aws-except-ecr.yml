@@ -328,13 +328,14 @@ jobs:
         with:
           go-version: stable
 
-      - name: Build cf-nuke
+      - name: Build cf-nuke (without R2 collector)
         working-directory: Terraform
         run: |
           set -euo pipefail
           VERSION="v0.3"
           TMP_DIR="$(mktemp -d)"
           git clone --depth 1 --branch "$VERSION" https://github.com/arafato/cf-nuke.git "$TMP_DIR"
+          rm -f "$TMP_DIR/resources/r2.go"
           (cd "$TMP_DIR" && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o "$OLDPWD/cf-nuke-linux-amd64" .)
           chmod +x cf-nuke-linux-amd64
 
