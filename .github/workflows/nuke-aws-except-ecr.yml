@@ -327,7 +327,7 @@ jobs:
         working-directory: Terraform
         run: |
           set -euo pipefail
-          VERSION="v0.3"
+          VERSION="v0.1.0"
           curl -fL -o cf-nuke-linux-amd64 "https://github.com/arafato/cf-nuke/releases/download/${VERSION}/cf-nuke-linux-amd64"
           echo "9a44b6ec8463fe8db2043d546796b97eada620981b33a2846b0953bc4c3ea74d  cf-nuke-linux-amd64" | sha256sum -c -
           chmod +x cf-nuke-linux-amd64
