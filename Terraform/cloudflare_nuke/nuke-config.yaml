@@ -7,6 +7,8 @@ resource-types:
   excludes:
     # Keep API tokens intact (used by the workflow itself).
     - AccountToken
+    # Skip R2 to avoid TLS/auth issues during collection/deletion.
+    - R2
 
 resource-ids:
   excludes: []
