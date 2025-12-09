@@ -323,13 +323,20 @@ jobs:
           print(final.read_text())
           PY
 
-      - name: Download cf-nuke
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Build cf-nuke (without R2 collector)
         working-directory: Terraform
         run: |
           set -euo pipefail
           VERSION="v0.3"
-          curl -fL -o cf-nuke-linux-amd64 "https://github.com/arafato/cf-nuke/releases/download/${VERSION}/cf-nuke-linux-amd64"
-          echo "9a44b6ec8463fe8db2043d546796b97eada620981b33a2846b0953bc4c3ea74d  cf-nuke-linux-amd64" | sha256sum -c -
+          TMP_DIR="$(mktemp -d)"
+          git clone --depth 1 --branch "$VERSION" https://github.com/arafato/cf-nuke.git "$TMP_DIR"
+          rm -f "$TMP_DIR/resources/r2.go"
+          (cd "$TMP_DIR" && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o "$OLDPWD/cf-nuke-linux-amd64" .)
           chmod +x cf-nuke-linux-amd64
 
       - name: Run cf-nuke (DESTRUCTIVE)
