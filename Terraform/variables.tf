@@ -153,6 +153,18 @@ variable "cloudflare_api_token" {
   sensitive   = true
 }
 
+variable "cloudflare_account_id" {
+  description = "Cloudflare account ID used when creating resources like workers or R2 buckets."
+  type        = string
+  default     = ""
+}
+
+variable "cloudflare_user_email" {
+  description = "Cloudflare user email that owns the API token."
+  type        = string
+  default     = ""
+}
+
 variable "cloudflare_zone_id" {
   description = "Cloudflare Zone ID where the domain is managed."
   type        = string
