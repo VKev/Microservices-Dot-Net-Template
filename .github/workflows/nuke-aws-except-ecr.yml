@@ -255,24 +255,24 @@ jobs:
           fi
 
           CF_ACCOUNT_ID=$(jq -r '.cloudflare_account_id // empty' "$FILE")
-          CF_API_TOKEN=$(jq -r '.cloudflare_api_token // empty' "$FILE")
+          CF_GLOBAL_API_KEY=$(jq -r '.cloudflare_global_api_key // empty' "$FILE")
           CF_ZONE_ID=$(jq -r '.cloudflare_zone_id // empty' "$FILE")
           CF_DOMAIN_NAME=$(jq -r '.domain_name // empty' "$FILE")
           CF_USER_EMAIL=$(jq -r '.cloudflare_user_email // .cloudflare_email // empty' "$FILE")
 
-          if [ -z "$CF_ACCOUNT_ID" ] || [ -z "$CF_API_TOKEN" ] || [ -z "$CF_USER_EMAIL" ]; then
-            echo "::error::cloudflare_account_id, cloudflare_api_token, or cloudflare_user_email missing from merged tfvars" >&2
+          if [ -z "$CF_ACCOUNT_ID" ] || [ -z "$CF_GLOBAL_API_KEY" ] || [ -z "$CF_USER_EMAIL" ]; then
+            echo "::error::cloudflare_account_id, cloudflare_global_api_key, or cloudflare_user_email missing from merged tfvars" >&2
             exit 1
           fi
 
-          echo "::add-mask::$CF_API_TOKEN"
+          echo "::add-mask::$CF_GLOBAL_API_KEY"
           echo "::add-mask::$CF_ACCOUNT_ID"
           [ -n "$CF_ZONE_ID" ] && echo "::add-mask::$CF_ZONE_ID"
           echo "::add-mask::$CF_USER_EMAIL"
 
           {
             echo "CF_ACCOUNT_ID=$CF_ACCOUNT_ID"
-            echo "CF_API_TOKEN=$CF_API_TOKEN"
+            echo "CF_GLOBAL_API_KEY=$CF_GLOBAL_API_KEY"
             [ -n "$CF_ZONE_ID" ] && echo "CF_ZONE_ID=$CF_ZONE_ID"
             [ -n "$CF_DOMAIN_NAME" ] && echo "CF_DOMAIN_NAME=$CF_DOMAIN_NAME"
             echo "CF_USER_EMAIL=$CF_USER_EMAIL"
@@ -342,12 +342,12 @@ jobs:
       - name: Run cf-nuke (DESTRUCTIVE)
         working-directory: Terraform
         env:
-          CF_API_TOKEN: ${{ env.CF_API_TOKEN }}
+          CF_GLOBAL_API_KEY: ${{ env.CF_GLOBAL_API_KEY }}
           CF_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID }}
           CF_USER_EMAIL: ${{ env.CF_USER_EMAIL }}
         run: |
           set -euo pipefail
-          if [ -z "${CF_ACCOUNT_ID:-}" ] || [ -z "${CF_API_TOKEN:-}" ] || [ -z "${CF_USER_EMAIL:-}" ]; then
+          if [ -z "${CF_ACCOUNT_ID:-}" ] || [ -z "${CF_GLOBAL_API_KEY:-}" ] || [ -z "${CF_USER_EMAIL:-}" ]; then
             echo "::error::Missing Cloudflare credentials" >&2
             exit 1
           fi
@@ -356,7 +356,7 @@ jobs:
             --mode account \
             -c cloudflare_nuke/nuke-config.final.yaml \
             -a "$CF_ACCOUNT_ID" \
-            -k "$CF_API_TOKEN" \
+            -k "$CF_GLOBAL_API_KEY" \
             -u "$CF_USER_EMAIL" \
             --no-dry-run
 

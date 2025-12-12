@@ -165,6 +165,13 @@ variable "cloudflare_user_email" {
   default     = ""
 }
 
+variable "cloudflare_global_api_key" {
+  description = "Cloudflare Global API Key used for legacy authentication flows (required by cf-nuke)."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "cloudflare_zone_id" {
   description = "Cloudflare Zone ID where the domain is managed."
   type        = string
