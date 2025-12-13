@@ -109,16 +109,6 @@ terraform -chdir=Terraform apply <same var-files>
 - `use_eks = true` (default): provisions an EKS cluster (t3.small nodes, desired=4 by default) and applies the `k8s_microservices_manifest` to namespace `microservices`. Workloads: Redis (+ PVC + Secret), RabbitMQ (+ PVC + Secret), n8n, nginx proxy for n8n, Guest microservice, User microservice, API Gateway, plus their services/NodePorts.
 - `use_eks = false`: provisions ECS on EC2 with 3 container instances (server-1/2/3). Task groups: server-1 runs redis + rabbitmq + user with host-path data volumes; server-2 runs guest + apigateway; server-3 runs n8n + nginx proxy. Uses ALB and Service Connect for traffic and discovery.
 
-## Secrets Hygiene
-- Do not commit real passwords, tokens, or connection strings.
-- Keep `terraform-var` private; share only the redacted `Terraform-vars` copies.
-- Kubernetes manifests in `Terraform-vars/k8s.auto.tfvars` should keep the same shape as the private file with secrets replaced by `<REDACTED>`.
-
-## Helpful Scripts
-- `Terraform/scripts/merge_tfvars.py` - combines environment-provided tfvars blobs into files.
-- `Terraform/scripts/resolve_placeholders.py` - replaces placeholders from environment variables.
-- `Terraform/scripts/export_tf_env.py` - exports env vars expected by Terraform.
-- `Terraform/scripts/wait_for_services.py` - simple health checks for provisioned services.
 
 ## Cleanup
 - Local: `docker compose down -v`.
